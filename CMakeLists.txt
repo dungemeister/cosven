@@ -3,15 +3,12 @@ project(earth_sym VERSION 0.1.0 LANGUAGES C CXX)
 
 
 
-set(HEADERS inc/shaderHandler.hpp inc/satellite_model.hpp inc/satellite.hpp inc/camera.hpp)
-set(SOURCES src/shaderHandler.cpp src/satellite_model.cpp src/satellite.cpp src/camera.cpp)
+set(HEADERS inc/shaderHandler.hpp inc/satellite_model.hpp inc/satellite.hpp inc/camera.hpp inc/skybox.hpp inc/earth.hpp)
+set(SOURCES src/shaderHandler.cpp src/satellite_model.cpp src/satellite.cpp src/camera.cpp src/skybox.cpp src/earth.cpp)
 
 add_executable(earth_sym src/main.cpp)
 # add_definitions(-DSTB_IMAGE_IMPLEMENTATION)
 target_sources(earth_sym PRIVATE ${SOURCES})
-
-# target_sources(earth_sym PRIVATE src/shaderHandler.cpp)
-
 target_include_directories(earth_sym PUBLIC "/usr/include/glm")
 target_include_directories(earth_sym PUBLIC "/usr/include/stb")
 target_include_directories(earth_sym PUBLIC "inc/")
