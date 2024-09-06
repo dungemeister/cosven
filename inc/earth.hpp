@@ -2,6 +2,7 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
+#include <glm/trigonometric.hpp>
 #include "shaderHandler.hpp"
 
 #define HOR_STEP_ANGLE  (9)
@@ -26,6 +27,7 @@ public:
     void loadShaderModelMatrix(glm::mat4 model);
     void loadShaderViewMatrix(glm::mat4 view);
     void loadShaderUniformVec3(std::string uniform_name, glm::vec3 vec);
+    void rotate(float degree, glm::vec3 axis_vec);
 
 private:
     const static GLuint m_vertical_qty = 180/VER_STEP_ANGLE + 1;
@@ -41,7 +43,7 @@ private:
     GLfloat m_radius;
     struct {
         GLfloat x,y,z;
-        // GLfloat u,v;
+        GLfloat u,v;
     } m_vertices[m_vertices_qty] = {};
 
     GLuint m_indices[m_indices_qty] = {};

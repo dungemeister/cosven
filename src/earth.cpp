@@ -7,7 +7,7 @@ Earth::Earth(GLFWwindow *window, GLfloat radius)
     m_program = new ShaderHandler(window, "program earth");
     std::cout << "earth calcs" << std::endl;
 
-    for(int alpha = 0, index = 0; alpha <= 180; alpha += VER_STEP_ANGLE)
+    for(int alpha = 90, index = 0; alpha <= 270; alpha += VER_STEP_ANGLE)
     {
         float verAngle = alpha % 360;
         
@@ -15,15 +15,21 @@ Earth::Earth(GLFWwindow *window, GLfloat radius)
         for(int phi = 0; phi <= 360; phi += HOR_STEP_ANGLE, ++index)
         {
             float horAngle = phi % 360;
-            m_vertices[index].y = m_radius * glm::sin(glm::radians(horAngle));
-            m_vertices[index].x = m_radius * glm::cos(glm::radians(horAngle)) * glm::sin(glm::radians(verAngle));
-            m_vertices[index].z = m_radius * glm::cos(glm::radians(horAngle)) * glm::cos(glm::radians(verAngle));
+            m_vertices[index].y = m_radius * glm::sin(glm::radians(verAngle));
+            m_vertices[index].x = m_radius * glm::cos(glm::radians(verAngle)) * glm::sin(glm::radians(horAngle));
+            m_vertices[index].z = m_radius * glm::cos(glm::radians(verAngle)) * glm::cos(glm::radians(horAngle));
 
             std::cout << "index " << index << " x " << m_vertices[index].x << " y " << m_vertices[index].y << " z " << m_vertices[index].z << std::endl;
 
-            // m_vertices[index].u = (360 - phi) / 360.0f;
-            // m_vertices[index].v = (180 - alpha) / 180.0f;
-            // std::cout << " u " << m_vertices[index].u << " v " << m_vertices[index].v << std::endl;
+            m_vertices[index].u = (360 - phi ) / 360.0f;
+            m_vertices[index].v = (alpha - 90) / 180.0f;
+
+            // if(alpha <= 90)
+            //     m_vertices[index].v = 0.5f + alpha/180.0f;
+            // else
+            //     m_vertices[index].v = 0.5f - alpha/180.0f;
+
+            std::cout << " u " << m_vertices[index].u << " v " << m_vertices[index].v << std::endl;
         }
     }
 
@@ -59,11 +65,11 @@ void Earth::createModel()
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(m_indices), &m_indices[0], GL_STATIC_DRAW);
     std::cout << sizeof(m_indices) << std::endl;
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)(0 * sizeof(float)));
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(0 * sizeof(float)));
     glEnableVertexAttribArray(0);
 
-    // glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-    // glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
     
     glBindVertexArray(0);
 
@@ -92,8 +98,8 @@ void Earth::useShaderProgram()
 
 void Earth::render()
 {
-    // glActiveTexture(GL_TEXTURE0);
-    // glBindTexture(GL_TEXTURE_2D, m_program->getTextId(0));
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, m_program->getTextId(0));
     
     m_program->loadUniformMatrix4fv("model", m_model);
     glBindVertexArray(m_vao);
@@ -131,4 +137,9 @@ void Earth::loadShaderViewMatrix(glm::mat4 view)
 void Earth::loadShaderUniformVec3(std::string uniform_name, glm::vec3 vec)
 {
     m_program->loadUniform3fv(uniform_name, vec);
+}
+
+void Earth::rotate(float degree, glm::vec3 axis_vec)
+{
+    m_model = glm::rotate(m_model, glm::radians(degree), axis_vec);
 }

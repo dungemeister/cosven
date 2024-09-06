@@ -249,8 +249,8 @@ int satellites_class_render(GLFWwindow *window)
     float y = 0;
     float z = 0;
     float radius = 10.0f;
-    int sat_qty = 9;
-    int rings = 7;
+    int sat_qty = 30;
+    int rings = 30;
     for(int ring = 0; ring < rings; ring++)
     {
         float alpha = 10 + (ring + 0) * (float)(180)/(float)rings;
@@ -261,14 +261,14 @@ int satellites_class_render(GLFWwindow *window)
             sat->setRingNum(ring);
             sat->setSatelliteNum(i);
 
-            if(!sat->loadShaderSource("/home/yura/opengl/src/vshader_wings.glsl", vertex_shader))
+            if(!sat->loadShaderSource("../src/vshader_wings.glsl", vertex_shader))
                 return -1;
-            if(!sat->loadShaderSource("/home/yura/opengl/src/fshader_wings.glsl", fragment_shader))
+            if(!sat->loadShaderSource("../src/fshader_wings.glsl", fragment_shader))
                 return -2;
             if(sat->compileShader() != shaderCompileOk)
                 return -3;
-            sat->loadShaderTexture("/home/yura/opengl/solar_battery.jpg", false);
-            sat->loadShaderTexture("/home/yura/opengl/body_texture.jpg", false);
+            sat->loadShaderTexture("../solar_battery.jpg", false);
+            sat->loadShaderTexture("../body_texture.jpg", false);
             // sat->loadShaderTexture("/home/yura/opengl/wall_texture.jpg", false);
             
             sat->useShaderProgram();
@@ -293,9 +293,9 @@ int satellites_class_render(GLFWwindow *window)
     glClearColor(0.2f, 0.2f, 0.2f, 0.5f);
 
     Skybox *skybox = new Skybox(window, "skybox");
-        if(!skybox->loadShaderSource("/home/yura/opengl/src/skybox_vshader.glsl", vertex_shader))
+        if(!skybox->loadShaderSource("../src/skybox_vshader.glsl", vertex_shader))
             return -1;
-        if(!skybox->loadShaderSource("/home/yura/opengl/src/skybox_fshader.glsl", fragment_shader))
+        if(!skybox->loadShaderSource("../src/skybox_fshader.glsl", fragment_shader))
             return -2;
         if(skybox->compileShader() != shaderCompileOk)
             return -3;
@@ -309,12 +309,12 @@ int satellites_class_render(GLFWwindow *window)
     //     "/home/yura/opengl/skybox/back.jpg",
     //     });
     skybox->loadSkyboxCubemap({
-        "/home/yura/opengl/test_skybox/right.jpg",
-        "/home/yura/opengl/test_skybox/left.jpg",
-        "/home/yura/opengl/test_skybox/top.jpg",
-        "/home/yura/opengl/test_skybox/bottom.jpg",
-        "/home/yura/opengl/test_skybox/front.jpg",
-        "/home/yura/opengl/test_skybox/back.jpg",
+        "../test_skybox/right.jpg",
+        "../test_skybox/left.jpg",
+        "../test_skybox/top.jpg",
+        "../test_skybox/bottom.jpg",
+        "../test_skybox/front.jpg",
+        "../test_skybox/back.jpg",
         });
     skybox->useShaderProgram();
     skybox->loadUniformInt("skybox", 0);
@@ -325,19 +325,19 @@ int satellites_class_render(GLFWwindow *window)
     
     Earth *earth = new Earth(window, 8.0f);
     earth->createModel();
-    if(!earth->loadShaderSource("/home/yura/opengl/src/vshader_earth.glsl", vertex_shader))
+    if(!earth->loadShaderSource("../src/vshader_earth.glsl", vertex_shader))
         return -1;
-    if(!earth->loadShaderSource("/home/yura/opengl/src/fshader_earth.glsl", fragment_shader))
+    if(!earth->loadShaderSource("../src/fshader_earth.glsl", fragment_shader))
         return -2;
     if(earth->compileShader() != shaderCompileOk)
         return -3;
 
     glm::vec3 earth_color = glm::vec3(0.2f, 0.8f, 0.4f);
 
-    // earth->loadShaderTexture("/home/yura/opengl/earth.jpg", false);
+    earth->loadShaderTexture("../earth.jpg", false);
     earth->useShaderProgram();
-    // earth->loadShaderUniformInt("u_texture", 0);
-    earth->loadShaderUniformVec3("u_color", earth_color);
+    earth->loadShaderUniformInt("u_texture", 0);
+    // earth->loadShaderUniformVec3("u_color", earth_color);
 
     cout << "Drawing...\n";
     int k = 0;
@@ -403,6 +403,8 @@ int satellites_class_render(GLFWwindow *window)
         
         earth->loadShaderProjectionMatrix(projection);
         earth->loadShaderViewMatrix(camera.GetViewMatrix());
+        if(satellites_movement)
+            earth->rotate(0.2f, glm::vec3(0.0f, 1.0f, 0.0f));
         earth->render();
 
         if(printOpenGLError())

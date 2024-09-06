@@ -22,7 +22,10 @@ bool ShaderHandler:: loadSource(std::string filepath, shaderType type)
     std::ifstream fileStream(filepath, std::ios::in);
     std::string line = "";
     if (!fileStream.is_open())
+    {
+        std::cout << "Fail to load source file " << filepath << std::endl;
         return false;
+    }
     while(!fileStream.eof())
     {
         getline(fileStream, line);
