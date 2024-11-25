@@ -101,7 +101,7 @@ const GLuint skybox_indices[] = {
 Skybox::Skybox(GLFWwindow *window, std::string name)
 {
     m_program = new ShaderHandler(window, "program " + name);
-
+    createCubemapModel();
 
 }
 
@@ -179,12 +179,18 @@ void Skybox::createCubemapModel()
 
 Skybox::~Skybox()
 {
-    
+    glDeleteBuffers(1, m_vao);
+    glDeleteBuffers(1, m_vbo);
+    glDeleteBuffers(1, m_ebo);
 }
 
-void Skybox::render()
+void Skybox::render(glm::mat4 projection, glm::mat4 view)
 {
-
+    loadUniformMatrix4fv("view", view);
+    loadUniformMatrix4fv("projection", projection);
+    useShaderProgram();
+    
+    glDepthFunc(GL_LEQUAL);
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     glBindVertexArray(m_vao[0]);
     glActiveTexture(GL_TEXTURE0);
@@ -199,6 +205,8 @@ void Skybox::loadSkyboxCubemap(std::vector<std::string> surfaces)
 {
     m_surfaces = surfaces;
     m_text_id = loadCubemap(m_surfaces);
+    useShaderProgram();
+    loadUniformInt("skybox", 0);
 }
 
 void Skybox::loadUniformInt(std::string uniform_name, GLint value)

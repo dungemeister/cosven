@@ -33,8 +33,6 @@ private:
     const static GLuint m_vertical_qty = 180/VER_STEP_ANGLE + 1;
     const static GLuint m_horizontal_qty = 360/HOR_STEP_ANGLE + 1;
     const static GLuint m_vertices_qty = m_vertical_qty * m_horizontal_qty;
-    // const static GLuint m_indices_qty = m_vertices_qty;
-    // const static GLuint m_indices_qty = (360/STEP_ANGLE);
     const static GLuint m_indices_qty = 2 * (m_vertices_qty - m_horizontal_qty);
 
     GLFWwindow *m_window = nullptr;

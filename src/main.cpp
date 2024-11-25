@@ -13,6 +13,7 @@
 #include "camera.hpp"
 #include "skybox.hpp"
 #include "earth.hpp"
+#include "figures.hpp"
 
 using namespace std;
 
@@ -65,6 +66,10 @@ void key_callback(GLFWwindow *window, int key, int scancode, int action, int mod
     {
         polygon_fill ^= true;
         cout << "polygons " << (polygon_fill ? "true": "false") << endl;
+        if(polygon_fill)
+            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        else
+            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
     }
     if(glfwGetKey(window, GLFW_KEY_M) == GLFW_PRESS)
@@ -190,7 +195,6 @@ void mouse_cursor_callback(GLFWwindow *window, double xpos, double ypos)
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height)
 {
-    // cout << width << " " << height <<endl;
     glViewport(0, 0, width, height);
     // projection = glm::perspective(glm::radians(45.0f), (float)width / (float)height, 0.1f, 100.0f);
     g_width = width;
@@ -249,8 +253,8 @@ int satellites_class_render(GLFWwindow *window)
     float y = 0;
     float z = 0;
     float radius = 10.0f;
-    int sat_qty = 30;
-    int rings = 30;
+    int sat_qty = 15;
+    int rings = 7;
     for(int ring = 0; ring < rings; ring++)
     {
         float alpha = 10 + (ring + 0) * (float)(180)/(float)rings;
@@ -261,9 +265,9 @@ int satellites_class_render(GLFWwindow *window)
             sat->setRingNum(ring);
             sat->setSatelliteNum(i);
 
-            if(!sat->loadShaderSource("../src/vshader_wings.glsl", vertex_shader))
+            if(!sat->loadShaderSource("../src/vshader_satellite.glsl", vertex_shader))
                 return -1;
-            if(!sat->loadShaderSource("../src/fshader_wings.glsl", fragment_shader))
+            if(!sat->loadShaderSource("../src/fshader_satellite.glsl", fragment_shader))
                 return -2;
             if(sat->compileShader() != shaderCompileOk)
                 return -3;
@@ -299,15 +303,6 @@ int satellites_class_render(GLFWwindow *window)
             return -2;
         if(skybox->compileShader() != shaderCompileOk)
             return -3;
-    skybox->createCubemapModel();
-    // skybox->loadSkyboxCubemap({
-    //     "/home/yura/opengl/skybox/right.jpg",
-    //     "/home/yura/opengl/skybox/left.jpg",
-    //     "/home/yura/opengl/skybox/top.jpg",
-    //     "/home/yura/opengl/skybox/bottom.jpg",
-    //     "/home/yura/opengl/skybox/front.jpg",
-    //     "/home/yura/opengl/skybox/back.jpg",
-    //     });
     skybox->loadSkyboxCubemap({
         "../test_skybox/right.jpg",
         "../test_skybox/left.jpg",
@@ -316,8 +311,6 @@ int satellites_class_render(GLFWwindow *window)
         "../test_skybox/front.jpg",
         "../test_skybox/back.jpg",
         });
-    skybox->useShaderProgram();
-    skybox->loadUniformInt("skybox", 0);
 
     auto time = glfwGetTime();
     int i = 0;
@@ -337,7 +330,6 @@ int satellites_class_render(GLFWwindow *window)
     earth->loadShaderTexture("../earth.jpg", false);
     earth->useShaderProgram();
     earth->loadShaderUniformInt("u_texture", 0);
-    // earth->loadShaderUniformVec3("u_color", earth_color);
 
     cout << "Drawing...\n";
     int k = 0;
@@ -358,10 +350,8 @@ int satellites_class_render(GLFWwindow *window)
             sat->useShaderProgram();
             sat->setPolygonMode(polygon_fill);
             projection = glm::perspective(glm::radians(camera.Zoom), (float)g_width/(float)g_height, 0.1f, 100.0f);
-            // sat->loadShaderUniformFloat("u_green", glm::sin(glm::radians(50 * time)));
             sat->loadShaderProjectionMatrix(projection);
             sat->loadShaderViewMatrix(camera.GetViewMatrix());
-            // sat->rotateModel(-0.5 * (i + 1), glm::vec3(0.0f, 1.0f, 0.0f));
             if(satellites_movement && i == SAT_INDEX || satellites_movement && SAT_INDEX < 0)
             {
 
@@ -383,7 +373,6 @@ int satellites_class_render(GLFWwindow *window)
                 new_vec.w = 1;
 
                 glm::vec4 result = new_vec - cur_vec;
-                // cout << "x " << result.x << " y " << result.y << " z " << result.z << endl;
                 sat->translateModel(glm::vec3(result.x, result.y, -result.z));
             }
             sat->renderModel();
@@ -416,11 +405,8 @@ int satellites_class_render(GLFWwindow *window)
 
         glDepthFunc(GL_LEQUAL);
         
-        skybox->useShaderProgram();
         view = glm::mat4(glm::mat3(camera.GetViewMatrix()));
-        skybox->loadUniformMatrix4fv("view", view);
-        skybox->loadUniformMatrix4fv("projection", projection);
-        skybox->render();
+        skybox->render(projection, view);
         if(printOpenGLError())
         {
             glfwDestroyWindow(window);
@@ -437,87 +423,74 @@ int satellites_class_render(GLFWwindow *window)
     return 0;
 }
 
-int earth_test(GLFWwindow *window)
+int testing(GLFWwindow *window)
 {
     projection = glm::perspective(glm::radians(45.0f), (float)g_width / (float)g_height, 0.1f, 100.0f);
     view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
+    glClearColor(0.2f, 0.2f, 0.2f, 0.5f);
     
     Skybox *skybox = new Skybox(window, "skybox");
-        if(!skybox->loadShaderSource("/home/yura/opengl/src/skybox_vshader.glsl", vertex_shader))
-            return -1;
-        if(!skybox->loadShaderSource("/home/yura/opengl/src/skybox_fshader.glsl", fragment_shader))
-            return -2;
-        if(skybox->compileShader() != shaderCompileOk)
-            return -3;
-    skybox->createCubemapModel();
-    // skybox->loadSkyboxCubemap({
-    //     "/home/yura/opengl/skybox/right.jpg",
-    //     "/home/yura/opengl/skybox/left.jpg",
-    //     "/home/yura/opengl/skybox/top.jpg",
-    //     "/home/yura/opengl/skybox/bottom.jpg",
-    //     "/home/yura/opengl/skybox/front.jpg",
-    //     "/home/yura/opengl/skybox/back.jpg",
-    //     });
+    if(!skybox->loadShaderSource("../shaders/skybox_vshader.glsl", vertex_shader))
+        return -1;
+    if(!skybox->loadShaderSource("../shaders/skybox_fshader.glsl", fragment_shader))
+        return -2;
+    if(skybox->compileShader() != shaderCompileOk)
+        return -3;
+    
     skybox->loadSkyboxCubemap({
-        "/home/yura/opengl/test_skybox/right.jpg",
-        "/home/yura/opengl/test_skybox/left.jpg",
-        "/home/yura/opengl/test_skybox/top.jpg",
-        "/home/yura/opengl/test_skybox/bottom.jpg",
-        "/home/yura/opengl/test_skybox/front.jpg",
-        "/home/yura/opengl/test_skybox/back.jpg",
+        "../test_skybox/right.jpg",
+        "../test_skybox/left.jpg",
+        "../test_skybox/top.jpg",
+        "../test_skybox/bottom.jpg",
+        "../test_skybox/front.jpg",
+        "../test_skybox/back.jpg",
         });
-    skybox->useShaderProgram();
-    skybox->loadUniformInt("skybox", 0);
 
     auto time = glfwGetTime();
+
     int i = 0;
     
-    Earth *earth = new Earth(window, 8.0f);
-    earth->createModel();
-    if(!earth->loadShaderSource("/home/yura/opengl/src/vshader_earth.glsl", vertex_shader))
+    Torus *torus = new Torus(window, 8.0f, 4.0f, 9, 9, false);
+    if(!torus->loadShaderSource("../shaders/vshader_torus.glsl", vertex_shader))
         return -1;
-    if(!earth->loadShaderSource("/home/yura/opengl/src/fshader_earth.glsl", fragment_shader))
+    if(!torus->loadShaderSource("../shaders/fshader_torus.glsl", fragment_shader))
         return -2;
-    if(earth->compileShader() != shaderCompileOk)
+    if(torus->compileShader() != shaderCompileOk)
         return -3;
-    glClearColor(0.2f, 0.2f, 0.2f, 0.5f);
-    glm::vec3 earth_color = glm::vec3(0.2f, 1.0f, 0.4f);
-    earth->useShaderProgram();
-    earth->loadShaderUniformVec3("u_color", earth_color);
-
+    float start_time = glfwGetTime();
+    int frame_counter = 0;
     while(!glfwWindowShouldClose(window)){
         using namespace std::chrono_literals;
         
         processInput(window);
 
         auto end = std::chrono::steady_clock::now() + 16ms;
-        time = glfwGetTime();
+        if(time - start_time > 1.0f)
+        {
+            std::cout << "fps " << frame_counter << std::endl;
+            frame_counter = 0;
+            start_time = glfwGetTime();
+        }
         glfwPollEvents();
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        projection = glm::perspective(glm::radians(camera.Zoom), (float)g_width/(float)g_height, 0.1f, 100.0f);
 
-        earth->useShaderProgram();
+        torus->rotate(0.5f, glm::vec3(0.0f, 0.0f, 1.0f));
+        torus->setPolygonMode(polygon_fill);
+        torus->render(projection, camera.GetViewMatrix());
         
-        earth->loadShaderProjectionMatrix(projection);
-        earth->loadShaderViewMatrix(camera.GetViewMatrix());
-        earth->render();
-
-        // glDepthFunc(GL_LEQUAL);
-        // skybox->useShaderProgram();
-        // view = glm::mat4(glm::mat3(camera.GetViewMatrix()));
-        // skybox->loadUniformMatrix4fv("view", view);
-        // skybox->loadUniformMatrix4fv("projection", projection);
-        // skybox->render();
+        skybox->render(projection, camera.GetViewMatrix());
         if(printOpenGLError())
         {
             glfwDestroyWindow(window);
             glfwTerminate();
             return -10;
         }
-        // glDepthFunc(GL_LESS);
-
-        std::this_thread::sleep_until(end);
         glfwSwapBuffers(window);
+        frame_counter++;
+        time = glfwGetTime();
+        std::this_thread::sleep_until(end);
     }
     
     glfwDestroyWindow(window);
@@ -557,8 +530,8 @@ int main(int, char**){
 
     glfwSetWindowSizeCallback(window, framebuffer_size_callback);
 
-    int res = satellites_class_render(window);
-    // int res = earth_test(window);
+    // int res = satellites_class_render(window);
+    int res = testing(window);
     return res;
     
 }

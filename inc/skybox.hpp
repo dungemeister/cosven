@@ -13,7 +13,7 @@ public:
     ~Skybox();
     void createModel();
     void createCubemapModel();
-    void render();
+    void render(glm::mat4 projection, glm::mat4 view);
     bool loadShaderSource(std::string filepath, shaderType type);
     bool compileShader();
     void useShaderProgram();
