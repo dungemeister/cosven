@@ -253,8 +253,8 @@ int satellites_class_render(GLFWwindow *window)
     float y = 0;
     float z = 0;
     float radius = 10.0f;
-    int sat_qty = 15;
-    int rings = 7;
+    int sat_qty = 5;
+    int rings = 1;
     for(int ring = 0; ring < rings; ring++)
     {
         float alpha = 10 + (ring + 0) * (float)(180)/(float)rings;
@@ -265,14 +265,14 @@ int satellites_class_render(GLFWwindow *window)
             sat->setRingNum(ring);
             sat->setSatelliteNum(i);
 
-            if(!sat->loadShaderSource("../src/vshader_satellite.glsl", vertex_shader))
+            if(!sat->loadShaderSource("../shaders/vshader_satellite.glsl", vertex_shader))
                 return -1;
-            if(!sat->loadShaderSource("../src/fshader_satellite.glsl", fragment_shader))
+            if(!sat->loadShaderSource("../shaders/fshader_satellite.glsl", fragment_shader))
                 return -2;
             if(sat->compileShader() != shaderCompileOk)
                 return -3;
-            sat->loadShaderTexture("../solar_battery.jpg", false);
-            sat->loadShaderTexture("../body_texture.jpg", false);
+            sat->loadShaderTexture("../textures/solar_battery.jpg", false);
+            sat->loadShaderTexture("../textures/body_texture.jpg", false);
             // sat->loadShaderTexture("/home/yura/opengl/wall_texture.jpg", false);
             
             sat->useShaderProgram();
@@ -297,9 +297,9 @@ int satellites_class_render(GLFWwindow *window)
     glClearColor(0.2f, 0.2f, 0.2f, 0.5f);
 
     Skybox *skybox = new Skybox(window, "skybox");
-        if(!skybox->loadShaderSource("../src/skybox_vshader.glsl", vertex_shader))
+        if(!skybox->loadShaderSource("../shaders/skybox_vshader.glsl", vertex_shader))
             return -1;
-        if(!skybox->loadShaderSource("../src/skybox_fshader.glsl", fragment_shader))
+        if(!skybox->loadShaderSource("../shaders/skybox_fshader.glsl", fragment_shader))
             return -2;
         if(skybox->compileShader() != shaderCompileOk)
             return -3;
@@ -318,16 +318,16 @@ int satellites_class_render(GLFWwindow *window)
     
     Earth *earth = new Earth(window, 8.0f);
     earth->createModel();
-    if(!earth->loadShaderSource("../src/vshader_earth.glsl", vertex_shader))
+    if(!earth->loadShaderSource("../shaders/vshader_earth.glsl", vertex_shader))
         return -1;
-    if(!earth->loadShaderSource("../src/fshader_earth.glsl", fragment_shader))
+    if(!earth->loadShaderSource("../shaders/fshader_earth.glsl", fragment_shader))
         return -2;
     if(earth->compileShader() != shaderCompileOk)
         return -3;
 
     glm::vec3 earth_color = glm::vec3(0.2f, 0.8f, 0.4f);
 
-    earth->loadShaderTexture("../earth.jpg", false);
+    earth->loadShaderTexture("../textures/earth.jpg", false);
     earth->useShaderProgram();
     earth->loadShaderUniformInt("u_texture", 0);
 
@@ -381,7 +381,7 @@ int satellites_class_render(GLFWwindow *window)
             {
                 glfwDestroyWindow(window);
                 glfwTerminate();
-                return -10;
+                // return -10;
             }
             i++;
             k++;
@@ -400,18 +400,18 @@ int satellites_class_render(GLFWwindow *window)
         {
             glfwDestroyWindow(window);
             glfwTerminate();
-            return -10;
+            // return -11;
         }
 
         glDepthFunc(GL_LEQUAL);
         
         view = glm::mat4(glm::mat3(camera.GetViewMatrix()));
-        skybox->render(projection, view);
+        // skybox->render(projection, view);
         if(printOpenGLError())
         {
             glfwDestroyWindow(window);
             glfwTerminate();
-            return -10;
+            // return -12;
         }
 
         std::this_thread::sleep_until(end);
@@ -438,12 +438,12 @@ int testing(GLFWwindow *window)
         return -3;
     
     skybox->loadSkyboxCubemap({
-        "../test_skybox/right.jpg",
-        "../test_skybox/left.jpg",
-        "../test_skybox/top.jpg",
-        "../test_skybox/bottom.jpg",
-        "../test_skybox/front.jpg",
-        "../test_skybox/back.jpg",
+        "../../test_skybox/right.jpg",
+        "../../test_skybox/left.jpg",
+        "../../test_skybox/top.jpg",
+        "../../test_skybox/bottom.jpg",
+        "../../test_skybox/front.jpg",
+        "../../test_skybox/back.jpg",
         });
 
     auto time = glfwGetTime();
@@ -530,8 +530,8 @@ int main(int, char**){
 
     glfwSetWindowSizeCallback(window, framebuffer_size_callback);
 
-    // int res = satellites_class_render(window);
-    int res = testing(window);
+    int res = satellites_class_render(window);
+    // int res = testing(window);
     return res;
     
 }

@@ -206,7 +206,7 @@ void Skybox::loadSkyboxCubemap(std::vector<std::string> surfaces)
     m_surfaces = surfaces;
     m_text_id = loadCubemap(m_surfaces);
     useShaderProgram();
-    loadUniformInt("skybox", 0);
+    // loadUniformInt("skybox", 0);
 }
 
 void Skybox::loadUniformInt(std::string uniform_name, GLint value)

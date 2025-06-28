@@ -11,7 +11,7 @@ Earth::Earth(GLFWwindow *window, GLfloat radius)
     {
         float verAngle = alpha % 360;
         
-        std::cout << "ring " << std::endl;
+        // std::cout << "ring " << std::endl;
         for(int phi = 0; phi <= 360; phi += HOR_STEP_ANGLE, ++index)
         {
             float horAngle = phi % 360;
@@ -19,7 +19,7 @@ Earth::Earth(GLFWwindow *window, GLfloat radius)
             m_vertices[index].x = m_radius * glm::cos(glm::radians(verAngle)) * glm::sin(glm::radians(horAngle));
             m_vertices[index].z = m_radius * glm::cos(glm::radians(verAngle)) * glm::cos(glm::radians(horAngle));
 
-            std::cout << "index " << index << " x " << m_vertices[index].x << " y " << m_vertices[index].y << " z " << m_vertices[index].z << std::endl;
+            // std::cout << "index " << index << " x " << m_vertices[index].x << " y " << m_vertices[index].y << " z " << m_vertices[index].z << std::endl;
 
             m_vertices[index].u = (360 - phi ) / 360.0f;
             m_vertices[index].v = (alpha - 90) / 180.0f;
@@ -29,7 +29,7 @@ Earth::Earth(GLFWwindow *window, GLfloat radius)
             // else
             //     m_vertices[index].v = 0.5f - alpha/180.0f;
 
-            std::cout << " u " << m_vertices[index].u << " v " << m_vertices[index].v << std::endl;
+            // std::cout << " u " << m_vertices[index].u << " v " << m_vertices[index].v << std::endl;
         }
     }
 
