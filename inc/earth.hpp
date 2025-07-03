@@ -5,7 +5,7 @@
 #include <glm/trigonometric.hpp>
 #include "shaderHandler.hpp"
 
-#define HOR_STEP_ANGLE  (9)
+#define HOR_STEP_ANGLE  (15)
 #define VER_STEP_ANGLE  (9)
 
 class Earth{
@@ -16,7 +16,7 @@ public:
     void createModel();
     bool loadShaderSource(std::string filepath, shaderType type);
     bool compileShader();
-    void loadShaderTexture(std::string filepath, bool alpha_channel);
+    void loadShaderTexture(std::string filepath);
     void deleteShaderTexture();
     void useShaderProgram();
     void render();

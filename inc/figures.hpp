@@ -20,7 +20,7 @@ public:
     void createModelWithTexture();
     bool loadShaderSource(std::string filepath, shaderType type);
     bool compileShader();
-    void loadShaderTexture(std::string filepath, bool alpha_channel);
+    void loadShaderTexture(std::string filepath);
     void useShaderProgram();
     void render(glm::mat4 projection, glm::mat4 view);
 

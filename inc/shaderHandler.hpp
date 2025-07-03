@@ -37,7 +37,7 @@ public:
     compileErrorType compileShader();
     bool getShaderCompileError(shaderType type);
     void useProgram();
-    bool loadTexture(std::string texture_path, bool alpha_channel);
+    bool loadTexture(std::string texture_path);
     void deleteTexture() {
         auto texture = m_text_id.back();
         if(texture == *m_text_id.end()) return;

@@ -25,9 +25,9 @@ bool Satellite::compileShader()
     return m_program->compileShader();
 }
 
-void Satellite::loadShaderTexture(std::string filepath, bool alpha_channel)
+void Satellite::loadShaderTexture(std::string filepath)
 {
-    m_program->loadTexture(filepath, alpha_channel);
+    m_program->loadTexture(filepath);
     // m_program->loadUniformInt("u_texture", 0);
 }
 

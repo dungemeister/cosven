@@ -284,9 +284,9 @@ int satellites_class_render(GLFWwindow *window)
                 return -2;
             if(sat->compileShader() != shaderCompileOk)
                 return -3;
-            sat->loadShaderTexture("../textures/solar_battery.jpg", false);
-            sat->loadShaderTexture("../textures/body_texture.jpg", false);
-            // sat->loadShaderTexture("/home/yura/opengl/wall_texture.jpg", false);
+            sat->loadShaderTexture("../textures/solar_battery.jpg");
+            sat->loadShaderTexture("../textures/body_texture.jpg");
+            // sat->loadShaderTexture("/home/yura/opengl/wall_texture.jpg");
             
             sat->useShaderProgram();
             sat->createModel();
@@ -338,7 +338,7 @@ int satellites_class_render(GLFWwindow *window)
 
     glm::vec3 earth_color = glm::vec3(0.2f, 0.8f, 0.4f);
 
-    earth->loadShaderTexture("../textures/earth.jpg", false);
+    earth->loadShaderTexture("../textures/earth.jpg");
     earth->useShaderProgram();
     earth->loadShaderUniformInt("u_texture", 0);
 

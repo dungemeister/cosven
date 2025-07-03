@@ -48,10 +48,10 @@ void push_satellite(GLFWwindow *window, int ring, int rings, int sat_num, float 
         exit(-2);
     if(sat->compileShader() != shaderCompileOk)
         exit(-3);
-    sat->loadShaderTexture("textures/solar_battery.jpg", false);
-    sat->loadShaderTexture("textures/body_texture.jpg", false);
-    // sat->loadShaderTexture("textures/wall_texture.jpg", false);
-    // sat->loadShaderTexture("/home/yura/opengl/wall_texture.jpg", false);
+    sat->loadShaderTexture("textures/solar_battery.jpg");
+    sat->loadShaderTexture("textures/body_texture.jpg");
+    // sat->loadShaderTexture("textures/wall_texture.jpg");
+    // sat->loadShaderTexture("/home/yura/opengl/wall_texture.jpg");
     
     sat->useShaderProgram();
     sat->createModel();
@@ -212,7 +212,7 @@ int imgui_system(GLFWwindow *window){
 
     glm::vec3 earth_color = glm::vec3(0.2f, 0.8f, 0.4f);
 
-    earth->loadShaderTexture("textures/earth.jpg", false);
+    earth->loadShaderTexture("textures/earth.jpg");
     earth->useShaderProgram();
     earth->loadShaderUniformInt("u_texture", 0);
 
@@ -418,8 +418,8 @@ int imgui_system(GLFWwindow *window){
                     selected_file = outPath;
                     free(outPath);
                     earth->deleteShaderTexture();
-                    earth->loadShaderTexture(selected_file, false);
-                    
+                    earth->loadShaderTexture(selected_file);
+
                 } else if (result == NFD_CANCEL) {
                     selected_file = "Отмена";
                 } else {

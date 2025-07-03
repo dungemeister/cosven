@@ -110,9 +110,9 @@ bool Torus::compileShader()
     return m_program->compileShader();
 }
 
-void Torus::loadShaderTexture(std::string filepath, bool alpha_channel)
+void Torus::loadShaderTexture(std::string filepath)
 {
-    m_program->loadTexture(filepath, alpha_channel);
+    m_program->loadTexture(filepath);
     // m_program->loadUniformInt("u_texture", 0);
 }
 

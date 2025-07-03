@@ -11,7 +11,7 @@ public:
     ~Satellite();
     bool loadShaderSource(std::string filepath, shaderType type);
     bool compileShader();
-    void loadShaderTexture(std::string filepath, bool alpha_channel);
+    void loadShaderTexture(std::string filepath);
     void useShaderProgram();
     void createModel();
     void renderModel();

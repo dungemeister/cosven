@@ -90,7 +90,7 @@ void ShaderHandler::useProgram()
     glUseProgram(m_program_id);
 }
 
-bool ShaderHandler::loadTexture(std::string texture_path, bool alpha_channel)
+bool ShaderHandler::loadTexture(std::string texture_path)
 {
     int width, height, channels;
     GLuint text_id;
@@ -104,13 +104,20 @@ bool ShaderHandler::loadTexture(std::string texture_path, bool alpha_channel)
     // stbi_set_flip_vertically_on_load(true);
 
     unsigned char *logo_texture_data = stbi_load(texture_path.c_str(), &width, &height, &channels, 0);
+    // Определение формата в зависимости от количества каналов
+    GLenum format;
+    if (channels == 1) format = GL_RED;
+    else if (channels == 3) format = GL_RGB;
+    else if (channels == 4) format = GL_RGBA;
+    else {
+        printf("Неподдерживаемый формат: %d каналов\n", channels);
+        stbi_image_free(logo_texture_data);
+        return false;
+    }
+
     if(logo_texture_data)
     {
-        if(alpha_channel)
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, logo_texture_data);
-
-        else
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, logo_texture_data);
+        glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, logo_texture_data);
         glGenerateMipmap(GL_TEXTURE_2D);
 
     }

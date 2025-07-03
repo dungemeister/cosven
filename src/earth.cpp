@@ -84,10 +84,9 @@ bool Earth::compileShader()
     return m_program->compileShader();
 }
 
-void Earth::loadShaderTexture(std::string filepath, bool alpha_channel)
+void Earth::loadShaderTexture(std::string filepath)
 {
-    m_program->loadTexture(filepath, alpha_channel);
-    // m_program->loadUniformInt("u_texture", 0);
+    m_program->loadTexture(filepath);
 }
 void Earth::deleteShaderTexture()
 {
