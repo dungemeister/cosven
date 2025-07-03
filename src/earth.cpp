@@ -20,7 +20,7 @@ Earth::Earth(GLFWwindow *window, GLfloat radius)
 
             // std::cout << "index " << index << " x " << m_vertices[index].x << " y " << m_vertices[index].y << " z " << m_vertices[index].z << std::endl;
 
-            m_vertices[index].u = (360 - phi ) / 360.0f;
+            m_vertices[index].u = 1.0 - (360 - phi ) / 360.0f;
             m_vertices[index].v = (alpha - 90) / 180.0f;
 
             // if(alpha <= 90)
