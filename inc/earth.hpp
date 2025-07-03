@@ -17,6 +17,7 @@ public:
     bool loadShaderSource(std::string filepath, shaderType type);
     bool compileShader();
     void loadShaderTexture(std::string filepath, bool alpha_channel);
+    void deleteShaderTexture();
     void useShaderProgram();
     void render();
 
@@ -28,6 +29,7 @@ public:
     void loadShaderViewMatrix(glm::mat4 view);
     void loadShaderUniformVec3(std::string uniform_name, glm::vec3 vec);
     void rotate(float degree, glm::vec3 axis_vec);
+    GLuint getTexture() { return m_program->getTextId(0); }
 
 private:
     const static GLuint m_vertical_qty = 180/VER_STEP_ANGLE + 1;

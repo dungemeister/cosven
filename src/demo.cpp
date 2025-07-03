@@ -1,0 +1,447 @@
+#include <iostream>
+#include <functional>
+
+#include <GL/glew.h>
+#include <GLFW/glfw3.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
+#include "demo.hpp"
+#include "satellite.hpp"
+#include "earth.hpp"
+#include "nfd.h"
+
+#include <imgui.h>
+#include <imgui/backends/imgui_impl_glfw.h>
+#include <imgui/backends/imgui_impl_opengl3.h>
+
+extern FreeCamera camera;
+extern bool mouse_rotation;
+extern double g_xpos, g_ypos;
+extern int SAT_INDEX;
+extern uint32_t g_width, g_height;
+extern float deltatime, lastFrame;
+
+extern float lastX , lastY;
+extern bool firstMouse;
+
+const FreeCamera camera_scene_spot1 = FreeCamera(glm::vec3(0.0f, 0.0f, 20.0f), glm::vec3(0.0f, 1.0f, 0.0f), {}, {});
+
+OrbitCamera orbit_cam;
+
+bool imgui_hovered = false;
+
+bool camera_movement = false;
+static bool is_orbital_camera = true;
+
+void push_satellite(GLFWwindow *window, int ring, int rings, int sat_num, float radius, std::vector<Satellite*>& sats){
+    float alpha = 10 + (ring + 0) * (float)(180)/(float)rings;
+    Satellite *sat = new Satellite(window, "satellite");
+    sat->setRingNum(ring);
+    sat->setSatelliteNum(sat_num);
+    sat->setRadius(radius);
+
+    if(!sat->loadShaderSource("shaders/vshader_satellite.glsl", vertex_shader))
+        exit(-1);
+    if(!sat->loadShaderSource("shaders/fshader_satellite.glsl", fragment_shader))
+        exit(-2);
+    if(sat->compileShader() != shaderCompileOk)
+        exit(-3);
+    sat->loadShaderTexture("textures/solar_battery.jpg", false);
+    sat->loadShaderTexture("textures/body_texture.jpg", false);
+    // sat->loadShaderTexture("textures/wall_texture.jpg", false);
+    // sat->loadShaderTexture("/home/yura/opengl/wall_texture.jpg", false);
+    
+    sat->useShaderProgram();
+    sat->createModel();
+    
+    float phi = (2 * ring) + sat_num * (float)(360)/sats.size() > 0? static_cast<float>(sats.size()): (float)sats.size() + 1;
+
+    float y = glm::sin(glm::radians(phi)) * radius;
+    float x = glm::cos(glm::radians(phi)) * glm::sin(glm::radians(alpha)) * radius;
+    float z = glm::cos(glm::radians(phi)) * glm::cos(glm::radians(alpha)) * radius;
+
+    std::cout << "x " << x << " y " << y << " z " << z << "\n";
+    sat->translateModel(glm::vec3(x, y, -z));
+    // sat->rotateModel(10.0f * (i+ 1), glm::vec3(2.0f * (i + 1), 0.0f, 0.0f));
+    
+    sat->setAlphaAngle(alpha);
+    sat->setPhiAngle(phi);
+    sats.push_back(sat);
+}
+
+void pop_satellite(std::vector<Satellite*>& sats){
+    sats.pop_back();
+
+}
+
+void glfw_scroll_callback(GLFWwindow *window, double xoffset, double yoffset)
+{
+    if(imgui_hovered) return;
+    if(is_orbital_camera){
+        orbit_cam.IncreaseDistance(yoffset);
+    }
+    else{
+        camera.ProcessMouseScroll(static_cast<float> (yoffset));
+    }
+}
+
+void glfw_mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
+{
+    if(imgui_hovered) return;
+    if(glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_RELEASE)
+    {
+        mouse_rotation = false;
+    }
+    if(glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
+    {
+        glfwGetCursorPos(window, &g_xpos, &g_ypos);
+        mouse_rotation = true;
+
+    }
+}
+
+void glfw_mouse_cursor_callback(GLFWwindow *window, double xpos, double ypos)
+{
+
+    float xposFloat = static_cast<float>(xpos);
+    float yposFloat = static_cast<float>(ypos);
+    if(firstMouse)
+    {
+        lastX = xposFloat;
+        lastY = yposFloat;
+        firstMouse = false;
+    }
+    float xoffset = xposFloat - lastX;
+    float yoffset = lastY - yposFloat;
+
+    lastX = xposFloat;
+    lastY = yposFloat;
+    if(!mouse_rotation)
+        return;
+    if(is_orbital_camera){
+        orbit_cam.UpdateAngle(xoffset);
+    }
+    else {
+        camera.ProcessMouseMovement(xoffset, yoffset);
+    }
+
+}
+
+void processKeysInput(GLFWwindow *window)
+{
+    if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+    {
+        glfwSetWindowShouldClose(window, GL_TRUE);
+    }
+
+    if(glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
+    {
+        camera = camera_scene_spot1;
+    }
+
+    if(glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+
+    {
+        camera.ProcessKeyboard(FORWARD, deltatime);
+    }
+
+    if(glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+    {
+        camera.ProcessKeyboard(BACKWARD, deltatime);
+
+    }
+
+    if(glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+    {
+        camera.ProcessKeyboard(RIGHT, deltatime);
+    }
+
+    if(glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+    {
+        camera.ProcessKeyboard(LEFT, deltatime);
+
+    }
+    return;
+}
+
+int imgui_system(GLFWwindow *window){
+    glm::mat4 model = glm::mat4(1.0f);
+    glm::mat4 view = glm::mat4(1.0f);
+    glm::mat4 projection = glm::mat4(1.0f);
+    int g_width = 1920;
+    int g_height = 1080;
+    auto time = glfwGetTime();
+    std::vector<Satellite*> sats;
+
+    // glfwSetKeyCallback(window, key_callback);
+    glfwSetScrollCallback(window, glfw_scroll_callback);
+    glfwSetMouseButtonCallback(window, glfw_mouse_button_callback);
+    glfwSetCursorPosCallback(window, glfw_mouse_cursor_callback);
+
+    glEnable(GL_DEPTH_TEST);
+
+    projection = glm::perspective(glm::radians(45.0f), (float)g_width / (float)g_height, 0.1f, 100.0f);
+    view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
+
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    // Setup Platform/Renderer backends
+    ImGui_ImplGlfw_InitForOpenGL(window, true);
+    ImGui_ImplOpenGL3_Init(); 
+
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+
+    // Загрузка шрифта с поддержкой кириллицы (например, DejaVuSans)
+    io.Fonts->AddFontFromFileTTF("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 16.0f, nullptr, io.Fonts->GetGlyphRangesCyrillic());
+    io.Fonts->Build();
+
+    camera.SetPosition(glm::vec3(0.0f, 0.0f, +30.0f));
+
+    Earth *earth = new Earth(window, 8.0f);
+    earth->createModel();
+    if(!earth->loadShaderSource("shaders/vshader_earth.glsl", vertex_shader))
+        return -1;
+    if(!earth->loadShaderSource("shaders/fshader_earth.glsl", fragment_shader))
+        return -2;
+    if(earth->compileShader() != shaderCompileOk)
+        return -3;
+
+    glm::vec3 earth_color = glm::vec3(0.2f, 0.8f, 0.4f);
+
+    earth->loadShaderTexture("textures/earth.jpg", false);
+    earth->useShaderProgram();
+    earth->loadShaderUniformInt("u_texture", 0);
+
+    while(!glfwWindowShouldClose(window)){
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        
+        using namespace std::chrono_literals;
+
+        auto end = std::chrono::steady_clock::now() + 16ms;
+        static int sats_counter = 0;
+        static float sats_movespeed = 1.0f;
+        static bool satellite_movement = false;
+        static bool earth_movement = false;
+        static float earth_movespeed = 1.0f;
+        static float orbit_camera_angle_coef = 0.0f;
+        static float orbit_camera_distance = 15.0f;
+        static float widgets_width = 600.0f;
+        
+        static std::string selected_file; // Для хранения пути выбранного файла
+
+        time = glfwGetTime();
+        glfwPollEvents();
+        
+        processKeysInput(window);
+        if (io.WantCaptureMouse) imgui_hovered = true;
+        else imgui_hovered = false;
+        if(camera_movement) orbit_cam.Update(orbit_camera_angle_coef);
+
+        earth->useShaderProgram();
+        if(is_orbital_camera){
+            earth->loadShaderProjectionMatrix(orbit_cam.GetProjectionMatrix());
+            earth->loadShaderViewMatrix(orbit_cam.GetViewMatrix());
+        }
+        else{
+            projection = glm::perspective(glm::radians(camera.Zoom), (float)g_width/(float)g_height, 0.1f, 100.0f);
+            earth->loadShaderProjectionMatrix(projection);
+            earth->loadShaderViewMatrix(camera.GetViewMatrix());
+
+        }
+        if(earth_movement){
+            earth->rotate(earth_movespeed, glm::vec3(0.0f, 1.0f, 0.0f));
+        }
+        earth->render();
+        
+        for(auto sat: sats)
+        {
+            sat->useShaderProgram();
+            sat->setPolygonMode(true);
+            projection = glm::perspective(glm::radians(camera.Zoom), (float)g_width/(float)g_height, 0.1f, 100.0f);
+            if(is_orbital_camera){
+                sat->loadShaderProjectionMatrix(orbit_cam.GetProjectionMatrix());
+                sat->loadShaderViewMatrix(orbit_cam.GetViewMatrix());
+
+            }
+            else {
+                sat->loadShaderProjectionMatrix(projection);
+                sat->loadShaderViewMatrix(camera.GetViewMatrix());
+
+            }
+            
+            if (satellite_movement)
+            {
+
+                float cur_phi = sat->getPhiAngle();
+                // float new_phi = cur_phi + satellite_rotate_angle;
+                float new_phi = cur_phi + sats_movespeed;
+                sat->setPhiAngle(new_phi);
+                float delta_alpha = sat->getAlphaAngle();
+                float r = sat->getRadius();
+                glm::vec4 cur_vec;
+                cur_vec.y = glm::sin(glm::radians(cur_phi)) * r;
+                cur_vec.x = glm::cos(glm::radians(cur_phi)) * glm::sin(glm::radians(delta_alpha)) * r;
+                cur_vec.z = glm::cos(glm::radians(cur_phi)) * glm::cos(glm::radians(delta_alpha)) * r;
+                cur_vec.w = 1;
+
+                glm::vec4 new_vec;
+                new_vec.y = glm::sin(glm::radians(new_phi)) * r;
+                new_vec.x = glm::cos(glm::radians(new_phi)) * glm::sin(glm::radians(delta_alpha)) * r;
+                new_vec.z = glm::cos(glm::radians(new_phi)) * glm::cos(glm::radians(delta_alpha)) * r;
+                new_vec.w = 1;
+
+                glm::vec4 result = new_vec - cur_vec;
+                sat->translateModel(glm::vec3(result.x, result.y, -result.z));
+            }
+            
+            sat->renderModel();
+
+        }
+
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+        {
+            ImVec2 pos = {};
+            ImVec2 size = {widgets_width, 600};
+
+            ImGui::SetNextWindowPos(pos);
+            ImGui::SetNextWindowSize(size);
+
+            ImGui::Begin("Контроллер плоскостей");
+                        
+            if(ImGui::Button("Движение Земли")) earth_movement ^= true;
+            ImGui::SliderFloat("Скорость вращения Земли", &earth_movespeed, 0.0, 15.0f, "%.1f");
+
+            ImGui::SeparatorText("Спутники");
+            if(ImGui::SliderInt("Спутники плоскости 0", &sats_counter, 0, 30)){
+                std::cout << sats_counter << "\n";
+                auto size = sats.size();
+                while(size != sats_counter){
+                    if(size < sats_counter) push_satellite(window, 1, 1, sats_counter, 10, sats);
+                    else pop_satellite(sats);
+                    size = sats.size();
+                }
+                for(auto sat: sats){
+                    int ring = sat->getRingNum();
+                    auto r = sat->getRadius();
+                    // float alpha = 10 + (ring + 0) * (float)(180)/(float)1; // 1 - количество плоскостей (колец)
+                    float new_phi = (2 * ring) + sat->getSatelliteNum() * (float)(360)/(float)sats.size();
+                    float cur_phi = sat->getPhiAngle();
+                    float delta_alpha = sat->getAlphaAngle();
+
+                    if(cur_phi != new_phi) {
+                        glm::vec4 cur_vec;
+                        cur_vec.y = glm::sin(glm::radians(cur_phi)) * r;
+                        cur_vec.x = glm::cos(glm::radians(cur_phi)) * glm::sin(glm::radians(delta_alpha)) * r;
+                        cur_vec.z = glm::cos(glm::radians(cur_phi)) * glm::cos(glm::radians(delta_alpha)) * r;
+                        cur_vec.w = 1;
+
+                        glm::vec4 new_vec;
+                        new_vec.y = glm::sin(glm::radians(new_phi)) * r;
+                        new_vec.x = glm::cos(glm::radians(new_phi)) * glm::sin(glm::radians(delta_alpha)) * r;
+                        new_vec.z = glm::cos(glm::radians(new_phi)) * glm::cos(glm::radians(delta_alpha)) * r;
+                        new_vec.w = 1;
+                            
+                        glm::vec4 result = new_vec - cur_vec;
+                        sat->translateModel(glm::vec3(result.x, result.y, -result.z));
+                        
+                        sat->setAlphaAngle(delta_alpha);
+                        sat->setPhiAngle(new_phi);
+                    }
+                }
+
+            }
+            if(ImGui::Button("Движение спутников")) satellite_movement ^= true;
+            ImGui::SliderFloat("Скорость спутников", &sats_movespeed, 0.0, 15.0f, "%.1f");
+
+            
+            ImGui::SeparatorText("Параметры камеры");
+            if(ImGui::Button("Сменить камеру")) is_orbital_camera ^= true;
+            if(is_orbital_camera) {
+                ImGui::SeparatorText("Орбитальная камера");
+                if(ImGui::Button("Движение камеры")) camera_movement ^= true;
+                ImGui::SliderFloat("Скорость вращения камеры", &orbit_camera_angle_coef, -0.3, 0.3f, "%.2f");
+
+                // if(ImGui::SliderFloat("Дальность камеры", &orbit_camera_distance, 0.0, 100.0f, "%.1f")) orbit_cam.setDistance(orbit_camera_distance);
+                ImGui::LabelText("Орбитальная камера", "Текущая камера:");
+                auto pos = orbit_cam.GetPosition();
+                ImGui::Text("x: %.2f", pos.x);
+                ImGui::SameLine(); ImGui::Text("y: %.2f", pos.y);
+                ImGui::SameLine(); ImGui::Text("z: %.2f", pos.z);
+            }
+            else{
+                ImGui::LabelText("Свободная камера", "Текущая камера:");
+                ImGui::Text("x: %.2f", camera.Position.x);
+                ImGui::SameLine(); ImGui::Text("y: %.2f", camera.Position.y);
+                ImGui::SameLine(); ImGui::Text("z: %.2f", camera.Position.z);
+                {
+                    ImVec2 pos = {0, 600};
+                    ImVec2 size = {widgets_width, 300};
+                    ImGui::SetNextWindowPos(pos);
+                    ImGui::SetNextWindowSize(size);
+
+                    ImGui::Begin("Сцены");
+                    static int selected_item = -1; // Индекс выбранного элемента
+                    static std::vector<std::string> items = {"Default", "Spot1"};
+                    if (ImGui::BeginListBox("##listbox", ImVec2(0, 100))) { // Размер списка
+                        for (int i = 0; i < items.size(); ++i) {
+                            bool is_selected = (selected_item == i);
+                            if (ImGui::Selectable(items[i].c_str(), is_selected)) {
+                                selected_item = i; // Обновление выбранного элемента
+                                std::string scene = items[selected_item];
+                            }
+                        }
+                        ImGui::EndListBox();
+                    }
+                    if (selected_item != -1) {
+                        std::string scene = items[selected_item];
+                        ImGui::Text("Текущая сцена: %s", scene.c_str());
+
+                    }
+                    ImGui::End();
+                }
+            }
+            ImGui::Text("TODO:\n"
+                        "#Добавить управление плоскостями\n"
+                        "#Добавить Землю с текстурой\n");
+
+            auto texture = earth->getTexture();
+            if (ImGui::ImageButton("Earth_texture_button", (void*)(intptr_t)texture, ImVec2(100, 100), ImVec2(0, 0), ImVec2(1, 1), ImVec4(0, 0, 0, 0), ImVec4(1, 1, 1, 1))) {
+                nfdchar_t *outPath = NULL;
+                nfdresult_t result = NFD_OpenDialog(NULL, NULL, &outPath);
+                if (result == NFD_OKAY) {
+                    selected_file = outPath;
+                    free(outPath);
+                    earth->deleteShaderTexture();
+                    earth->loadShaderTexture(selected_file, false);
+                    
+                } else if (result == NFD_CANCEL) {
+                    selected_file = "Отмена";
+                } else {
+                    selected_file = "Ошибка";
+                }
+            }
+            ImGui::End();
+        }
+        
+
+        ImGui::Render();
+        glClearColor(0.2f, 0.2f, 0.2f, 0.5f);
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+        std::this_thread::sleep_until(end);
+        glfwMakeContextCurrent(window);
+        glfwSwapBuffers(window);
+    }
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
+    glfwDestroyWindow(window);
+    glfwTerminate();
+    return 0;
+}

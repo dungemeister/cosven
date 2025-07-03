@@ -15,6 +15,12 @@
 #include "earth.hpp"
 #include "figures.hpp"
 
+#include <imgui.h>
+#include <imgui/backends/imgui_impl_glfw.h>
+#include <imgui/backends/imgui_impl_opengl3.h>
+
+#include "demo.hpp"
+
 using namespace std;
 
 #define OBJECTS_QTY (3)
@@ -36,11 +42,11 @@ GLuint renderingProgram;
 bool mouse_rotation = false;
 double g_xpos, g_ypos;
 int SAT_INDEX = -1;
-uint32_t g_width = 1200;
-uint32_t g_height = 1000;
+uint32_t g_width = 1920;
+uint32_t g_height = 1080;
 
 const glm::vec3 default_camera_position = glm::vec3(5.0f, 0.0f, 10.0f);
-Camera camera(default_camera_position);
+FreeCamera camera(default_camera_position);
 float lastX = g_width / 2.0f;
 float lastY = g_height / 2.0f;
 bool firstMouse = true;
@@ -59,6 +65,10 @@ struct cameraParams{
 };
 
 glm::mat4 transform = glm::mat4(1.0f);
+
+std::vector<Satellite*> sats;
+const int rings = 2;
+const int sats_per_ring = 10;
 
 void key_callback(GLFWwindow *window, int key, int scancode, int action, int mode)
 {
@@ -114,7 +124,7 @@ void key_callback(GLFWwindow *window, int key, int scancode, int action, int mod
     return;
 }
 
-void processInput(GLFWwindow *window)
+void processInput(GLFWwindow *window, FreeCamera& camera)
 {
     if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
     {
@@ -123,7 +133,7 @@ void processInput(GLFWwindow *window)
 
     if(glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
     {
-        camera = Camera(default_camera_position);
+        camera = FreeCamera(default_camera_position);
     }
 
     if(glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
@@ -243,12 +253,15 @@ bool printOpenGLError()
 
 int satellites_class_render(GLFWwindow *window)
 {
+    glfwSetKeyCallback(window, key_callback);
+    glfwSetScrollCallback(window, scroll_callback);
+    glfwSetMouseButtonCallback(window, mouse_button_callback);
+    glfwSetCursorPosCallback(window, mouse_cursor_callback);
     glEnable(GL_DEPTH_TEST);
     
     projection = glm::perspective(glm::radians(45.0f), (float)g_width / (float)g_height, 0.1f, 100.0f);
     view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
 
-    std::vector<Satellite*> sats;
     float x = 0;
     float y = 0;
     float z = 0;
@@ -294,8 +307,6 @@ int satellites_class_render(GLFWwindow *window)
         }
     }
         
-    glClearColor(0.2f, 0.2f, 0.2f, 0.5f);
-
     Skybox *skybox = new Skybox(window, "skybox");
         if(!skybox->loadShaderSource("../shaders/skybox_vshader.glsl", vertex_shader))
             return -1;
@@ -334,15 +345,16 @@ int satellites_class_render(GLFWwindow *window)
     cout << "Drawing...\n";
     int k = 0;
     while(!glfwWindowShouldClose(window)){
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        
         using namespace std::chrono_literals;
         
-        processInput(window);
+        processInput(window, camera);
 
         auto end = std::chrono::steady_clock::now() + 16ms;
         time = glfwGetTime();
         glfwPollEvents();
 
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         i = 0;
 
         for(auto sat: sats)
@@ -411,10 +423,12 @@ int satellites_class_render(GLFWwindow *window)
         {
             glfwDestroyWindow(window);
             glfwTerminate();
+            break;
             // return -12;
         }
 
         std::this_thread::sleep_until(end);
+        glfwMakeContextCurrent(window);
         glfwSwapBuffers(window);
     }
 
@@ -425,6 +439,11 @@ int satellites_class_render(GLFWwindow *window)
 
 int testing(GLFWwindow *window)
 {
+    glfwSetKeyCallback(window, key_callback);
+    glfwSetScrollCallback(window, scroll_callback);
+    glfwSetMouseButtonCallback(window, mouse_button_callback);
+    glfwSetCursorPosCallback(window, mouse_cursor_callback);
+    
     projection = glm::perspective(glm::radians(45.0f), (float)g_width / (float)g_height, 0.1f, 100.0f);
     view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
     glClearColor(0.2f, 0.2f, 0.2f, 0.5f);
@@ -462,7 +481,7 @@ int testing(GLFWwindow *window)
     while(!glfwWindowShouldClose(window)){
         using namespace std::chrono_literals;
         
-        processInput(window);
+        processInput(window, camera);
 
         auto end = std::chrono::steady_clock::now() + 16ms;
         if(time - start_time > 1.0f)
@@ -515,23 +534,24 @@ int main(int, char**){
     glfwWindowHint(GLFW_BLUE_BITS, mode->blueBits);
     glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate);
     
-    GLFWwindow *window = glfwCreateWindow(g_width, g_height, "OpenGL tutorials", NULL, NULL);
+    GLFWwindow *window = glfwCreateWindow(g_width, g_height, "OpenGL просто космос", NULL, NULL);
 
     glfwMakeContextCurrent(window);
     if(glewInit() != GLEW_OK){
         return -2;
     }
+    const char* glVersion = (const char*)glGetString(GL_VERSION);
+    std::cout<< "OpenGL Version: " << glVersion << "\n";
     // glewExperimental = GL_TRUE;
     glfwSwapInterval(1);
+
     glfwSetKeyCallback(window, key_callback);
-    glfwSetScrollCallback(window, scroll_callback);
-    glfwSetMouseButtonCallback(window, mouse_button_callback);
-    glfwSetCursorPosCallback(window, mouse_cursor_callback);
 
     glfwSetWindowSizeCallback(window, framebuffer_size_callback);
 
-    int res = satellites_class_render(window);
+    // int res = satellites_class_render(window);
     // int res = testing(window);
+    int res = imgui_system(window);
     return res;
     
 }

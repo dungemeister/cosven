@@ -41,6 +41,9 @@ public:
 
     void setRingNum(int ring_num) { m_ring_num = ring_num; }
     int getRingNum() { return m_ring_num; }
+
+    void setRadius(float radius) { m_radius = radius; }
+    float getRadius() { return m_radius; }
 private:
     std::string m_name;
     ShaderHandler *m_program;
@@ -51,6 +54,8 @@ private:
     float m_phi_angle = 0.0f;
     int m_satellite_num = 0;
     int m_ring_num = 0;
+    float m_radius;
+
     GLuint m_vao[VAO_ARRAYS_QTY] = {};
     GLuint m_vbo[VAO_ARRAYS_QTY] = {};
     GLuint m_ebo[VAO_ARRAYS_QTY] = {};

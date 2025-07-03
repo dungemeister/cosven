@@ -5,7 +5,6 @@ Earth::Earth(GLFWwindow *window, GLfloat radius)
     m_radius = radius;
     m_window = window;
     m_program = new ShaderHandler(window, "program earth");
-    std::cout << "earth calcs" << std::endl;
 
     for(int alpha = 90, index = 0; alpha <= 270; alpha += VER_STEP_ANGLE)
     {
@@ -60,10 +59,10 @@ void Earth::createModel()
 
     glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
     glBufferData(GL_ARRAY_BUFFER, sizeof(m_vertices), &m_vertices[0], GL_STATIC_DRAW);
-    std::cout << sizeof(m_vertices) << std::endl;
+    // std::cout << sizeof(m_vertices) << std::endl;
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_ebo);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(m_indices), &m_indices[0], GL_STATIC_DRAW);
-    std::cout << sizeof(m_indices) << std::endl;
+    // std::cout << sizeof(m_indices) << std::endl;
 
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(0 * sizeof(float)));
     glEnableVertexAttribArray(0);
@@ -90,7 +89,10 @@ void Earth::loadShaderTexture(std::string filepath, bool alpha_channel)
     m_program->loadTexture(filepath, alpha_channel);
     // m_program->loadUniformInt("u_texture", 0);
 }
-
+void Earth::deleteShaderTexture()
+{
+    m_program->deleteTexture();
+}
 void Earth::useShaderProgram()
 {
     m_program->useProgram();

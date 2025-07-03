@@ -38,6 +38,12 @@ public:
     bool getShaderCompileError(shaderType type);
     void useProgram();
     bool loadTexture(std::string texture_path, bool alpha_channel);
+    void deleteTexture() {
+        auto texture = m_text_id.back();
+        if(texture == *m_text_id.end()) return;
+        m_text_id.pop_back();
+        glDeleteTextures(1, &texture);
+    }
     void loadUniformInt(std::string uniform_name, GLint value);
     void loadUniformFloat(std::string uniform_name, GLfloat value);
     void loadUniformMatrix4fv(std::string uniform_name, const glm::mat4 &mat);
