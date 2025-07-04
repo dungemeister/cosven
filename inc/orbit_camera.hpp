@@ -55,6 +55,7 @@ public:
         position.x = target.x + distance * cos(angle);
         position.z = target.z + distance * sin(angle);
     }
+    float GetDistance() { return distance; }
     void SetDistance(float dist) {
         distance = dist;
         position = glm::vec3(distance*cos(angle), 0.0f, distance*sin(angle));

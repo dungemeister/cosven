@@ -373,6 +373,7 @@ int imgui_system(GLFWwindow *window){
                 ImGui::Text("x: %.2f", pos.x);
                 ImGui::SameLine(); ImGui::Text("y: %.2f", pos.y);
                 ImGui::SameLine(); ImGui::Text("z: %.2f", pos.z);
+                ImGui::SameLine(); ImGui::Text("dist: %.2f", orbit_cam.GetDistance());
             }
             else{
                 ImGui::LabelText("Свободная камера", "Текущая камера:");
