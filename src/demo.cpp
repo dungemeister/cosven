@@ -8,8 +8,9 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include "demo.hpp"
-#include "satellite.hpp"
+#include "ring.hpp"
 #include "earth.hpp"
+#include "skybox.hpp"
 #include "nfd.h"
 
 #include <imgui.h>
@@ -34,47 +35,6 @@ bool imgui_hovered = false;
 
 bool camera_movement = false;
 static bool is_orbital_camera = true;
-
-void push_satellite(GLFWwindow *window, int ring, int rings, int sat_num, float radius, std::vector<Satellite*>& sats){
-    float alpha = 10 + (ring + 0) * (float)(180)/(float)rings;
-    Satellite *sat = new Satellite(window, "satellite");
-    sat->setRingNum(ring);
-    sat->setSatelliteNum(sat_num);
-    sat->setRadius(radius);
-
-    if(!sat->loadShaderSource("shaders/vshader_satellite.glsl", vertex_shader))
-        exit(-1);
-    if(!sat->loadShaderSource("shaders/fshader_satellite.glsl", fragment_shader))
-        exit(-2);
-    if(sat->compileShader() != shaderCompileOk)
-        exit(-3);
-    sat->loadShaderTexture("textures/solar_battery.jpg");
-    sat->loadShaderTexture("textures/body_texture.jpg");
-    // sat->loadShaderTexture("textures/wall_texture.jpg");
-    // sat->loadShaderTexture("/home/yura/opengl/wall_texture.jpg");
-    
-    sat->useShaderProgram();
-    sat->createModel();
-    
-    float phi = (2 * ring) + sat_num * (float)(360)/sats.size() > 0? static_cast<float>(sats.size()): (float)sats.size() + 1;
-
-    float y = glm::sin(glm::radians(phi)) * radius;
-    float x = glm::cos(glm::radians(phi)) * glm::sin(glm::radians(alpha)) * radius;
-    float z = glm::cos(glm::radians(phi)) * glm::cos(glm::radians(alpha)) * radius;
-
-    std::cout << "x " << x << " y " << y << " z " << z << "\n";
-    sat->translateModel(glm::vec3(x, y, -z));
-    // sat->rotateModel(10.0f * (i+ 1), glm::vec3(2.0f * (i + 1), 0.0f, 0.0f));
-    
-    sat->setAlphaAngle(alpha);
-    sat->setPhiAngle(phi);
-    sats.push_back(sat);
-}
-
-void pop_satellite(std::vector<Satellite*>& sats){
-    sats.pop_back();
-
-}
 
 void glfw_scroll_callback(GLFWwindow *window, double xoffset, double yoffset)
 {
@@ -173,7 +133,6 @@ int imgui_system(GLFWwindow *window){
     int g_width = 1920;
     int g_height = 1080;
     auto time = glfwGetTime();
-    std::vector<Satellite*> sats;
 
     // glfwSetKeyCallback(window, key_callback);
     glfwSetScrollCallback(window, glfw_scroll_callback);
@@ -199,22 +158,140 @@ int imgui_system(GLFWwindow *window){
     io.Fonts->AddFontFromFileTTF("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 16.0f, nullptr, io.Fonts->GetGlyphRangesCyrillic());
     io.Fonts->Build();
 
+    const char* vertexShaderSrc = R"(
+        #version 450 core
+        layout(location = 0) in vec3 aPos;
+        layout(location = 1) in vec2 aTexCoord;
+        layout(location = 2) in vec3 instancePos;
+        uniform mat4 mvp;
+        uniform mat4 offsetModel;
+        out vec2 TexCoord;
+        void main() {
+            gl_Position = mvp * (offsetModel * vec4(aPos, 1.0) + vec4(instancePos, 0.0));
+            TexCoord = aTexCoord;
+        }
+    )";
+    const char* fragmentShaderSrc = R"(
+        #version 450 core
+        in vec2 TexCoord;
+        out vec4 FragColor;
+        uniform sampler2D texture1;
+        void main() {
+            FragColor = texture(texture1, TexCoord);
+        }
+    )";
+
+    // Шейдер для skybox
+    const char* skyboxVertexShaderSrc = R"(
+        #version 450 core
+        layout(location = 0) in vec3 aPos;
+        uniform mat4 mvp;
+        out vec3 TexCoords;
+        void main() {
+            TexCoords = aPos;
+            gl_Position = mvp * vec4(aPos, 1.0);
+        }
+    )";
+    const char* skyboxFragmentShaderSrc = R"(
+        #version 450 core
+        in vec3 TexCoords;
+        out vec4 FragColor;
+        uniform samplerCube skybox;
+        void main() {
+            FragColor = texture(skybox, TexCoords);
+        }
+    )";
+
+    GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(vertexShader, 1, &vertexShaderSrc, NULL);
+    glCompileShader(vertexShader);
+    GLint success;
+    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
+    if (!success) {
+        char infoLog[512];
+        glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
+        printf("Vertex Shader Error: %s\n", infoLog);
+    }
+
+    GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(fragmentShader, 1, &fragmentShaderSrc, NULL);
+    glCompileShader(fragmentShader);
+    glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
+    if (!success) {
+        char infoLog[512];
+        glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
+        printf("Fragment Shader Error: %s\n", infoLog);
+    }
+
+    GLuint shaderProgram = glCreateProgram();
+    glAttachShader(shaderProgram, vertexShader);
+    glAttachShader(shaderProgram, fragmentShader);
+    glLinkProgram(shaderProgram);
+    glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
+    if (!success) {
+        char infoLog[512];
+        glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
+        printf("Shader Program Error: %s\n", infoLog);
+    }
+    glDeleteShader(vertexShader);
+    glDeleteShader(fragmentShader);
+    
+    // Компиляция шейдера skybox
+    GLuint skyboxVertexShader = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(skyboxVertexShader, 1, &skyboxVertexShaderSrc, NULL);
+    glCompileShader(skyboxVertexShader);
+    glGetShaderiv(skyboxVertexShader, GL_COMPILE_STATUS, &success);
+    if (!success) {
+        char infoLog[512];
+        glGetShaderInfoLog(skyboxVertexShader, 512, NULL, infoLog);
+        printf("Skybox Vertex Shader Error: %s\n", infoLog);
+    }
+
+    GLuint skyboxFragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(skyboxFragmentShader, 1, &skyboxFragmentShaderSrc, NULL);
+    glCompileShader(skyboxFragmentShader);
+    glGetShaderiv(skyboxFragmentShader, GL_COMPILE_STATUS, &success);
+    if (!success) {
+        char infoLog[512];
+        glGetShaderInfoLog(skyboxFragmentShader, 512, NULL, infoLog);
+        printf("Skybox Fragment Shader Error: %s\n", infoLog);
+    }
+
+    GLuint skyboxShaderProgram = glCreateProgram();
+    glAttachShader(skyboxShaderProgram, skyboxVertexShader);
+    glAttachShader(skyboxShaderProgram, skyboxFragmentShader);
+    glLinkProgram(skyboxShaderProgram);
+    glGetProgramiv(skyboxShaderProgram, GL_LINK_STATUS, &success);
+    if (!success) {
+        char infoLog[512];
+        glGetProgramInfoLog(skyboxShaderProgram, 512, NULL, infoLog);
+        printf("Skybox Shader Program Error: %s\n", infoLog);
+    }
+    glDeleteShader(skyboxVertexShader);
+    glDeleteShader(skyboxFragmentShader);
+
     camera.SetPosition(glm::vec3(0.0f, 0.0f, +30.0f));
 
-    Earth *earth = new Earth(window, 8.0f);
-    earth->createModel();
-    if(!earth->loadShaderSource("shaders/vshader_earth.glsl", vertex_shader))
-        return -1;
-    if(!earth->loadShaderSource("shaders/fshader_earth.glsl", fragment_shader))
-        return -2;
-    if(earth->compileShader() != shaderCompileOk)
-        return -3;
+    NewEarth earth("textures/earth.jpg");
+    earth.PushEarth({0.f,0.f,0.f});
 
-    glm::vec3 earth_color = glm::vec3(0.2f, 0.8f, 0.4f);
+    std::vector<std::string> faces = {
+        "test_skybox/right.jpg",
+        "test_skybox/left.jpg",
+        "test_skybox/top.jpg",
+        "test_skybox/bottom.jpg",
+        "test_skybox/front.jpg",
+        "test_skybox/back.jpg"
+    };
+    NewSkybox skybox(faces);
 
-    earth->loadShaderTexture("textures/earth.jpg");
-    earth->useShaderProgram();
-    earth->loadShaderUniformInt("u_texture", 0);
+    int sats_counter = 20;
+    std::vector<Ring> rings;
+    for(int i = 0; i < 5; i++){
+        Ring r(i, "textures/body.jpg", "textures/wing.jpg");
+        r.pushSatellites(sats_counter);
+        rings.push_back(r);
+    }
 
     while(!glfwWindowShouldClose(window)){
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -222,7 +299,6 @@ int imgui_system(GLFWwindow *window){
         using namespace std::chrono_literals;
 
         auto end = std::chrono::steady_clock::now() + 16ms;
-        static int sats_counter = 0;
         static float sats_movespeed = 1.0f;
         static bool satellite_movement = false;
         static bool earth_movement = false;
@@ -240,66 +316,28 @@ int imgui_system(GLFWwindow *window){
         if (io.WantCaptureMouse) imgui_hovered = true;
         else imgui_hovered = false;
         if(camera_movement) orbit_cam.Update(orbit_camera_angle_coef);
-
-        earth->useShaderProgram();
-        if(is_orbital_camera){
-            earth->loadShaderProjectionMatrix(orbit_cam.GetProjectionMatrix());
-            earth->loadShaderViewMatrix(orbit_cam.GetViewMatrix());
+        if(is_orbital_camera)
+        {
+            projection = glm::perspective(glm::radians(camera.Zoom), static_cast<float>(g_width) / g_height, 0.1f, 100.f);
+            view = orbit_cam.GetViewMatrix();
         }
         else{
-            projection = glm::perspective(glm::radians(camera.Zoom), (float)g_width/(float)g_height, 0.1f, 100.0f);
-            earth->loadShaderProjectionMatrix(projection);
-            earth->loadShaderViewMatrix(camera.GetViewMatrix());
+            projection = glm::perspective(glm::radians(camera.Zoom), static_cast<float>(g_width) / g_height, 0.1f, 100.f);
+            view = camera.GetViewMatrix();
+        }
 
-        }
-        if(earth_movement){
-            earth->rotate(earth_movespeed, glm::vec3(0.0f, 1.0f, 0.0f));
-        }
-        earth->render();
-        
-        for(auto sat: sats)
+        skybox.Render(skyboxShaderProgram,view, projection);
+        earth.Render(shaderProgram, view, projection);
+
+        for(auto it = rings.begin();it != rings.end(); ++it)
         {
-            sat->useShaderProgram();
-            sat->setPolygonMode(true);
-            projection = glm::perspective(glm::radians(camera.Zoom), (float)g_width/(float)g_height, 0.1f, 100.0f);
-            if(is_orbital_camera){
-                sat->loadShaderProjectionMatrix(orbit_cam.GetProjectionMatrix());
-                sat->loadShaderViewMatrix(orbit_cam.GetViewMatrix());
-
-            }
-            else {
-                sat->loadShaderProjectionMatrix(projection);
-                sat->loadShaderViewMatrix(camera.GetViewMatrix());
-
-            }
-            
             if (satellite_movement)
-            {
+                it->rotateRing(sats_movespeed);
 
-                float cur_phi = sat->getPhiAngle();
-                // float new_phi = cur_phi + satellite_rotate_angle;
-                float new_phi = cur_phi + sats_movespeed;
-                sat->setPhiAngle(new_phi);
-                float delta_alpha = sat->getAlphaAngle();
-                float r = sat->getRadius();
-                glm::vec4 cur_vec;
-                cur_vec.y = glm::sin(glm::radians(cur_phi)) * r;
-                cur_vec.x = glm::cos(glm::radians(cur_phi)) * glm::sin(glm::radians(delta_alpha)) * r;
-                cur_vec.z = glm::cos(glm::radians(cur_phi)) * glm::cos(glm::radians(delta_alpha)) * r;
-                cur_vec.w = 1;
-
-                glm::vec4 new_vec;
-                new_vec.y = glm::sin(glm::radians(new_phi)) * r;
-                new_vec.x = glm::cos(glm::radians(new_phi)) * glm::sin(glm::radians(delta_alpha)) * r;
-                new_vec.z = glm::cos(glm::radians(new_phi)) * glm::cos(glm::radians(delta_alpha)) * r;
-                new_vec.w = 1;
-
-                glm::vec4 result = new_vec - cur_vec;
-                sat->translateModel(glm::vec3(result.x, result.y, -result.z));
-            }
-            
-            sat->renderModel();
-
+            if(is_orbital_camera)
+                it->render(shaderProgram, orbit_cam.GetViewMatrix(), orbit_cam.GetProjectionMatrix());
+            else 
+                it->render(shaderProgram, camera.GetViewMatrix(), projection);
         }
 
         ImGui_ImplOpenGL3_NewFrame();
@@ -318,46 +356,19 @@ int imgui_system(GLFWwindow *window){
             ImGui::SliderFloat("Скорость вращения Земли", &earth_movespeed, 0.0, 15.0f, "%.1f");
 
             ImGui::SeparatorText("Спутники");
-            if(ImGui::SliderInt("Спутники плоскости 0", &sats_counter, 0, 30)){
+            if(ImGui::SliderInt("Спутники плоскости", &sats_counter, 0, 30)){
                 std::cout << sats_counter << "\n";
-                auto size = sats.size();
-                while(size != sats_counter){
-                    if(size < sats_counter) push_satellite(window, 1, 1, sats_counter, 10, sats);
-                    else pop_satellite(sats);
-                    size = sats.size();
-                }
-                for(auto sat: sats){
-                    int ring = sat->getRingNum();
-                    auto r = sat->getRadius();
-                    // float alpha = 10 + (ring + 0) * (float)(180)/(float)1; // 1 - количество плоскостей (колец)
-                    float new_phi = (2 * ring) + sat->getSatelliteNum() * (float)(360)/(float)sats.size();
-                    float cur_phi = sat->getPhiAngle();
-                    float delta_alpha = sat->getAlphaAngle();
-
-                    if(cur_phi != new_phi) {
-                        glm::vec4 cur_vec;
-                        cur_vec.y = glm::sin(glm::radians(cur_phi)) * r;
-                        cur_vec.x = glm::cos(glm::radians(cur_phi)) * glm::sin(glm::radians(delta_alpha)) * r;
-                        cur_vec.z = glm::cos(glm::radians(cur_phi)) * glm::cos(glm::radians(delta_alpha)) * r;
-                        cur_vec.w = 1;
-
-                        glm::vec4 new_vec;
-                        new_vec.y = glm::sin(glm::radians(new_phi)) * r;
-                        new_vec.x = glm::cos(glm::radians(new_phi)) * glm::sin(glm::radians(delta_alpha)) * r;
-                        new_vec.z = glm::cos(glm::radians(new_phi)) * glm::cos(glm::radians(delta_alpha)) * r;
-                        new_vec.w = 1;
-                            
-                        glm::vec4 result = new_vec - cur_vec;
-                        sat->translateModel(glm::vec3(result.x, result.y, -result.z));
-                        
-                        sat->setAlphaAngle(delta_alpha);
-                        sat->setPhiAngle(new_phi);
+                auto size = rings.at(0).getSatellitesQty();
+                if(size != sats_counter){
+                    for(int ring_index = 0; ring_index < rings.size(); ring_index++){
+                        rings[ring_index].pushSatellites(sats_counter);
                     }
+                    size = rings.at(0).getSatellitesQty();
                 }
 
             }
             if(ImGui::Button("Движение спутников")) satellite_movement ^= true;
-            ImGui::SliderFloat("Скорость спутников", &sats_movespeed, 0.0, 15.0f, "%.1f");
+            ImGui::SliderFloat("Скорость спутников", &sats_movespeed, -2.0, 2.0f, "%.1f");
 
             
             ImGui::SeparatorText("Параметры камеры");
@@ -411,22 +422,22 @@ int imgui_system(GLFWwindow *window){
                         "#Добавить управление плоскостями\n"
                         "#Добавить Землю с текстурой\n");
 
-            auto texture = earth->getTexture();
-            if (ImGui::ImageButton("Earth_texture_button", (void*)(intptr_t)texture, ImVec2(100, 100), ImVec2(0, 0), ImVec2(1, 1), ImVec4(0, 0, 0, 0), ImVec4(1, 1, 1, 1))) {
-                nfdchar_t *outPath = NULL;
-                nfdresult_t result = NFD_OpenDialog(NULL, NULL, &outPath);
-                if (result == NFD_OKAY) {
-                    selected_file = outPath;
-                    free(outPath);
-                    earth->deleteShaderTexture();
-                    earth->loadShaderTexture(selected_file);
+            // auto texture = earth->getTexture();
+            // if (ImGui::ImageButton("Earth_texture_button", (void*)(intptr_t)texture, ImVec2(100, 100), ImVec2(0, 0), ImVec2(1, 1), ImVec4(0, 0, 0, 0), ImVec4(1, 1, 1, 1))) {
+            //     nfdchar_t *outPath = NULL;
+            //     nfdresult_t result = NFD_OpenDialog(NULL, NULL, &outPath);
+            //     if (result == NFD_OKAY) {
+            //         selected_file = outPath;
+            //         free(outPath);
+            //         earth->deleteShaderTexture();
+            //         earth->loadShaderTexture(selected_file);
 
-                } else if (result == NFD_CANCEL) {
-                    selected_file = "Отмена";
-                } else {
-                    selected_file = "Ошибка";
-                }
-            }
+            //     } else if (result == NFD_CANCEL) {
+            //         selected_file = "Отмена";
+            //     } else {
+            //         selected_file = "Ошибка";
+            //     }
+            // }
             ImGui::End();
         }
         

@@ -42,13 +42,15 @@ set(NFD_SOURCES ${CMAKE_SOURCE_DIR}/third_party/nativefiledialog/src/nfd_gtk.c
 #             inc/demo.hpp)
 set(SHADERS_DIR ${CMAKE_SOURCE_DIR}/shaders)
 set(SOURCES src/shaderHandler.cpp
-            src/satellite_model.cpp
+            src/model.cpp
             src/satellite.cpp
             src/camera.cpp
             src/skybox.cpp 
             src/earth.cpp
             src/figures.cpp
-            src/demo.cpp)
+            src/demo.cpp
+            src/ring.cpp
+            )
 
 
 add_executable(${PROJECT_NAME} src/main.cpp)

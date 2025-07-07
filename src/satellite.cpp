@@ -1,112 +1,105 @@
 #include "satellite.hpp"
 
+Satellite::Satellite(const std::string& body_texture_file, const std::string& wing_texture_file){
 
-Satellite::Satellite(GLFWwindow *window, std::string name)
-{
-    
-    m_name = name;
-    m_window = window;
-    m_program = new ShaderHandler(window, "program " + name);
-    m_model = new SatelliteModel(window, name);
+    std::vector<GLfloat> body_whole_vertices = {
+        -0.2f,  0.0f, 0.2f,  0.0f, 0.0f, //0
+        -0.2f,  1.0f, 0.2f,  0.0f, 1.0f, //1
+        0.2f,  1.0f, 0.2f,  1.0f, 1.0f,  //2
+        0.2f,  0.0f, 0.2f,  1.0f, 0.0f,  //3
+
+        -0.2f,  0.0f, -0.2f,  0.0f, 0.0f,//4
+        -0.2f,  1.0f, -0.2f,  0.0f, 1.0f,//5
+        0.2f,  1.0f, -0.2f,  1.0f, 1.0f, //6
+        0.2f,  0.0f, -0.2f,  1.0f, 0.0f, //7
+
+        -0.2f,  0.0f, 0.2f,  1.0f, 0.0f, //8
+        -0.2f,  1.0f, 0.2f,  1.0f, 1.0f, //9
+        -0.2f,  1.0f, -0.2f,  0.0f, 1.0f,//10
+        -0.2f,  0.0f, -0.2f,  0.0f, 0.0f,//11
+
+        0.2f,  0.0f, 0.2f,  0.0f, 0.0f,  //12
+        0.2f,  1.0f, 0.2f,  0.0f, 1.0f,  //13
+        0.2f,  1.0f, -0.2f,  1.0f, 1.0f, //14
+        0.2f,  0.0f, -0.2f,  1.0f, 0.0f, //15
+
+        -0.2f,  0.0f, 0.2f,  0.0f, 0.0f, //16
+        0.2f,  0.0f, 0.2f,  1.0f, 0.0f,  //17
+        0.2f,  0.0f, -0.2f,  1.0f, 1.0f, //18
+        -0.2f,  0.0f, -0.2f,  0.0f, 1.0f,//19
+
+        -0.2f,  1.0f, 0.2f,  0.0f, 1.0f, //20
+        0.2f,  1.0f, 0.2f,  1.0f, 1.0f,  //21
+        0.2f,  1.0f, -0.2f,  1.0f, 0.0f, //22
+        -0.2f,  1.0f, -0.2f,  0.0f, 0.0f,//23
+    };
+
+    std::vector<GLuint> body_indices = {
+        0, 1, 2,
+        0, 2, 3,
+
+        4, 5, 6,
+        4, 6, 7,
+
+        8, 9, 10,
+        8, 10, 11,
+
+        12, 13, 14,
+        12, 14, 15,
+
+        16, 17, 18,
+        16, 18, 19,
+
+        20, 21, 22,
+        20, 22, 23,
+    };
+    body = new Model(body_whole_vertices, body_indices, body_texture_file);
+
+    std::vector<GLfloat> wings_vertices = {
+        -1.0f,  0.25f, 0.0,  0.0f, 0.0f,
+        -1.0f,  0.75f, 0.0,  0.0f, 1.0f,
+        -0.2f, 0.75f, 0.0,  1.0f, 1.0f,
+        -0.2f, 0.25f, 0.0,  1.0f, 0.0f,
+        0.2f,  0.25f, 0.0,  0.0f, 0.0f,
+        0.2f,  0.75f, 0.0,  0.0f, 1.0f,
+        1.0f, 0.75f, 0.0,  1.0f, 1.0f,
+        1.0f, 0.25f, 0.0,  1.0f, 0.0f,
+    };
+    std::vector<GLuint> wings_indices = {
+        0, 1, 2,
+        0, 2, 3,
+        4, 5, 6,
+        4, 6, 7,
+    };
+    wings = new Model(wings_vertices, wings_indices, wing_texture_file);
+
+    // // Антенна
+    // std::vector<float> antennaVerts = {
+    //     -0.1f,  0.0f, 0.0f,  0.0f, 0.0f,
+    //         0.1f,  0.0f, 0.0f,  1.0f, 0.0f,
+    //         0.1f,  1.0f, 0.0f,  1.0f, 1.0f,
+    //     -0.1f,  1.0f, 0.0f,  0.0f, 1.0f
+    // };
+    // antenna = new Model(antennaVerts, wingIdx, "antenna.jpg");
 }
 
-Satellite::~Satellite()
-{
-
+void Satellite::AddInstance(const glm::vec3& pos) {
+    body->AddInstance(pos);
+    wings->AddInstance(pos);
+    m_instances_pos.push_back(pos);
 }
 
-bool Satellite::loadShaderSource(std::string filepath, shaderType type)
-{
-    return m_program->loadSource(filepath, type);
+void Satellite::RemoveInstance(){
+    body->RemoveInstance();
+    wings->RemoveInstance();
+    m_instances_pos.pop_back();
 }
-
-bool Satellite::compileShader()
-{
-    return m_program->compileShader();
+void Satellite::RemoveAllInstances(){
+    body->RemoveAllInstances();
+    wings->RemoveAllInstances();
 }
-
-void Satellite::loadShaderTexture(std::string filepath)
-{
-    m_program->loadTexture(filepath);
-    // m_program->loadUniformInt("u_texture", 0);
-}
-
-void Satellite::useShaderProgram()
-{
-    m_program->useProgram();
-}
-
-void Satellite::createModel()
-{
-    m_model->createModel(m_vao, m_vbo, m_ebo);
-    m_program->loadUniformInt("u_texture", 0);
-}
-
-void Satellite::renderModel()
-{
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, m_program->getTextId(0));
-
-    m_program->loadUniformMatrix4fv("model", m_model->getModelMatrix());
-    if(m_fill == POLYGON_MODE_FILL)
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-    if(m_fill == POLYGON_MODE_LINE)
-        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-    if(m_fill == POLYGON_MODE_POINT)
-        glPolygonMode(GL_FRONT_AND_BACK, GL_POINT);
-
-    m_model->renderWings(m_vao[0]);
-    
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, m_program->getTextId(1));
-    m_model->renderBody(m_vao[1]);
-
-}
-void Satellite::loadShaderUniformInt(std::string uniform_name, GLuint value)
-{
-    glUniform1i(glGetUniformLocation(m_program->getProgramId(), uniform_name.c_str()), value);
-}
-
-void Satellite::loadShaderUniformFloat(std::string uniform_name, GLfloat value)
-{
-    glUniform1f(glGetUniformLocation(m_program->getProgramId(), uniform_name.c_str()), value);
-
-}
-
-void Satellite::loadShaderProjectionMatrix(glm::mat4 projection)
-{
-    m_program->loadUniformMatrix4fv("projection", projection);
-}
-
-void Satellite::loadShaderModelMatrix(glm::mat4 model)
-{
-    m_program->loadUniformMatrix4fv("model", model);
-}
-
-void Satellite::loadShaderViewMatrix(glm::mat4 view)
-{
-    m_program->loadUniformMatrix4fv("view", view);
-}
-
-void Satellite::translateModel(glm::vec3 translate_vec)
-{
-    m_model->translateModel(translate_vec);
-}
-
-void Satellite::rotateModel(float degree, glm::vec3 axis_vec)
-{
-    m_model->rotateModel(degree, axis_vec);
-}
-
-void Satellite::scaleModel(glm::vec3 scale_vec)
-{
-    m_model->scaleModel(scale_vec);
-}
-
-void Satellite::setPolygonMode(bool fill_mode)
-{
-    if(fill_mode)
-        m_fill = POLYGON_MODE_FILL;
-    else
-        m_fill = POLYGON_MODE_LINE;
+void Satellite::Render(GLuint shaderProgram, const glm::mat4& view, const glm::mat4& projection) {
+    glm::mat4 mvp = projection * view;
+    body->Render(shaderProgram, mvp, glm::mat4(1.0f));
+    wings->Render(shaderProgram, mvp, glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f)));
 }

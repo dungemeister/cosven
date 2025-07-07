@@ -3,7 +3,9 @@
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <glm/trigonometric.hpp>
+#include <memory>
 #include "shaderHandler.hpp"
+#include "model.hpp"
 
 #define HOR_STEP_ANGLE  (15)
 #define VER_STEP_ANGLE  (9)
@@ -53,4 +55,34 @@ private:
     GLuint m_vbo = {};
     GLuint m_ebo = {};
 
+};
+
+class NewEarth{
+public:
+    struct VaoCoords{
+        glm::vec3 coords;
+        glm::vec2 texture;
+    };
+
+    NewEarth(const std::string& texture_file);
+    ~NewEarth() = default;
+    void PushEarth(const glm::vec3& pos);
+    void PopEarth();
+    void Render(GLuint shaderProgram, const glm::mat4& view, const glm::mat4& projection){
+        if(m_earth.get()){
+            glm::mat4 mvp = projection * view;
+            m_earth->Render(shaderProgram, mvp, glm::mat4(1.0f));
+
+        }
+    }
+private:
+    std::vector<float> m_vertices;
+    std::vector<uint> m_indices;
+    float m_radius;
+    const static GLuint m_vertical_qty = 180/VER_STEP_ANGLE + 1;
+    const static GLuint m_horizontal_qty = 360/HOR_STEP_ANGLE + 1;
+    const static GLuint m_vertices_qty = m_vertical_qty * m_horizontal_qty;
+    const static GLuint m_indices_qty = 2 * (m_vertices_qty - m_horizontal_qty);
+
+    std::shared_ptr<Model> m_earth;    
 };
