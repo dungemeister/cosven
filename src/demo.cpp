@@ -1,5 +1,7 @@
 #include <iostream>
 #include <functional>
+#include <fstream>
+#include <sstream>
 
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
@@ -89,7 +91,7 @@ void glfw_mouse_cursor_callback(GLFWwindow *window, double xpos, double ypos)
 
 }
 
-void processKeysInput(GLFWwindow *window)
+void process_keys_input(GLFWwindow *window)
 {
     if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
     {
@@ -126,6 +128,34 @@ void processKeysInput(GLFWwindow *window)
     return;
 }
 
+std::string get_source_from_file(std::string filepath){
+    std::ifstream file(filepath, std::ios::in | std::ios::binary);
+    if (!file.is_open()) {
+        printf("Ошибка: не удалось открыть файл шейдера: %s\n", filepath.c_str());
+        return "";
+    }
+
+    std::stringstream buffer;
+    buffer << file.rdbuf();
+    file.close();
+
+    std::string shaderCode = buffer.str();
+    if (shaderCode.empty()) {
+        printf("Ошибка: файл шейдера %s пуст\n", filepath.c_str());
+        return "";
+    }
+
+    if (shaderCode.size() >= 3 && (unsigned char)shaderCode[0] == 0xEF &&
+        (unsigned char)shaderCode[1] == 0xBB && (unsigned char)shaderCode[2] == 0xBF) {
+        printf("Предупреждение: обнаружен UTF-8 BOM в %s, удаляем\n", filepath.c_str());
+        shaderCode = shaderCode.substr(3);
+    }
+
+    printf("Файл шейдера %s загружен, размер: %zu байт\n", filepath.c_str(), shaderCode.size());
+    // printf("Первые 100 символов:\n%.*s\n", (int)std::min(shaderCode.size(), size_t(100)), shaderCode.c_str());
+    return shaderCode;
+}
+
 int imgui_system(GLFWwindow *window){
     glm::mat4 model = glm::mat4(1.0f);
     glm::mat4 view = glm::mat4(1.0f);
@@ -158,68 +188,36 @@ int imgui_system(GLFWwindow *window){
     io.Fonts->AddFontFromFileTTF("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 16.0f, nullptr, io.Fonts->GetGlyphRangesCyrillic());
     io.Fonts->Build();
 
-    const char* vertexShaderSrc = R"(
-        #version 450 core
-        layout(location = 0) in vec3 aPos;
-        layout(location = 1) in vec2 aTexCoord;
-        layout(location = 2) in mat4 instanceTransform;
-        uniform mat4 mvp;
-        uniform mat4 offsetModel;
-        out vec2 TexCoord;
-        void main() {
-            gl_Position = mvp * instanceTransform *(offsetModel * vec4(aPos, 1.0));
-            TexCoord = aTexCoord;
-        }
-    )";
-    const char* fragmentShaderSrc = R"(
-        #version 450 core
-        in vec2 TexCoord;
-        out vec4 FragColor;
-        uniform sampler2D texture1;
-        void main() {
-            FragColor = texture(texture1, TexCoord);
-        }
-    )";
-
-    // Шейдер для skybox
-    const char* skyboxVertexShaderSrc = R"(
-        #version 450 core
-        layout(location = 0) in vec3 aPos;
-        uniform mat4 mvp;
-        out vec3 TexCoords;
-        void main() {
-            TexCoords = aPos;
-            gl_Position = mvp * vec4(aPos, 1.0);
-        }
-    )";
-    const char* skyboxFragmentShaderSrc = R"(
-        #version 450 core
-        in vec3 TexCoords;
-        out vec4 FragColor;
-        uniform samplerCube skybox;
-        void main() {
-            FragColor = texture(skybox, TexCoords);
-        }
-    )";
+    // Загрузка и компиляция шейдера объектов
+    std::string vertexShaderSrc =   get_source_from_file("shaders/satellite_vshader.glsl");
+    std::string fragmentShaderSrc = get_source_from_file("shaders/satellite_fshader.glsl");
+    if (vertexShaderSrc.empty() || fragmentShaderSrc.empty()) {
+        printf("Ошибка: не удалось загрузить шейдеры объекта\n");
+        glfwDestroyWindow(window);
+        glfwTerminate();
+        return 1;
+    }
 
     GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vertexShader, 1, &vertexShaderSrc, NULL);
+    const char* vertexShaderCStr = vertexShaderSrc.c_str();
+    glShaderSource(vertexShader, 1, &vertexShaderCStr, NULL);
     glCompileShader(vertexShader);
     GLint success;
     glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
     if (!success) {
-        char infoLog[512];
-        glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
+        char infoLog[1024];
+        glGetShaderInfoLog(vertexShader, sizeof(infoLog), NULL, infoLog);
         printf("Vertex Shader Error: %s\n", infoLog);
     }
 
     GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fragmentShader, 1, &fragmentShaderSrc, NULL);
+    const char* fragmentShaderСSrc = fragmentShaderSrc.c_str();
+    glShaderSource(fragmentShader, 1, &fragmentShaderСSrc, NULL);
     glCompileShader(fragmentShader);
     glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
     if (!success) {
-        char infoLog[512];
-        glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
+        char infoLog[1024];
+        glGetShaderInfoLog(fragmentShader, sizeof(infoLog), NULL, infoLog);
         printf("Fragment Shader Error: %s\n", infoLog);
     }
 
@@ -229,26 +227,30 @@ int imgui_system(GLFWwindow *window){
     glLinkProgram(shaderProgram);
     glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
     if (!success) {
-        char infoLog[512];
-        glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
+        char infoLog[1024];
+        glGetProgramInfoLog(shaderProgram, sizeof(infoLog), NULL, infoLog);
         printf("Shader Program Error: %s\n", infoLog);
     }
     glDeleteShader(vertexShader);
     glDeleteShader(fragmentShader);
     
     // Компиляция шейдера skybox
+    std::string skyboxVertexShaderSrc = get_source_from_file("shaders/skybox_vshader.glsl").c_str();
+    const char* skyboxVertexShaderCSrc = skyboxVertexShaderSrc.c_str();
     GLuint skyboxVertexShader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(skyboxVertexShader, 1, &skyboxVertexShaderSrc, NULL);
+    glShaderSource(skyboxVertexShader, 1, &skyboxVertexShaderCSrc, NULL);
     glCompileShader(skyboxVertexShader);
     glGetShaderiv(skyboxVertexShader, GL_COMPILE_STATUS, &success);
     if (!success) {
-        char infoLog[512];
-        glGetShaderInfoLog(skyboxVertexShader, 512, NULL, infoLog);
+        char infoLog[1024];
+        glGetShaderInfoLog(skyboxVertexShader, sizeof(infoLog), NULL, infoLog);
         printf("Skybox Vertex Shader Error: %s\n", infoLog);
     }
 
+    std::string skyboxFragmentShaderSrc = get_source_from_file("shaders/skybox_fshader.glsl").c_str();
+    const char* skyboxFragmentShaderCSrc = skyboxFragmentShaderSrc.c_str();
     GLuint skyboxFragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(skyboxFragmentShader, 1, &skyboxFragmentShaderSrc, NULL);
+    glShaderSource(skyboxFragmentShader, 1, &skyboxFragmentShaderCSrc, NULL);
     glCompileShader(skyboxFragmentShader);
     glGetShaderiv(skyboxFragmentShader, GL_COMPILE_STATUS, &success);
     if (!success) {
@@ -293,7 +295,6 @@ int imgui_system(GLFWwindow *window){
         r.pushSatellites(sats_counter);
         rings.push_back(r);
     }
-
     while(!glfwWindowShouldClose(window)){
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         
@@ -313,7 +314,7 @@ int imgui_system(GLFWwindow *window){
         time = glfwGetTime();
         glfwPollEvents();
         
-        processKeysInput(window);
+        process_keys_input(window);
         if (io.WantCaptureMouse) imgui_hovered = true;
         else imgui_hovered = false;
         if(camera_movement) orbit_cam.Update(orbit_camera_angle_coef);

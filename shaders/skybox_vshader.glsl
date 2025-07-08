@@ -1,17 +1,10 @@
 
-#version 450
+#version 450 core
 
-layout (location = 0) in vec3 position;
-
-out vec3 TexCoord;
-
-uniform mat4 view;
-uniform mat4 projection;
-
-void main(void)
-{  
-    vec4 pos = projection * view * vec4(position, 1.0);
-    TexCoord = position;
-    gl_Position = pos.xyww;
-
+layout(location = 0) in vec3 aPos;
+uniform mat4 mvp;
+out vec3 TexCoords;
+void main() {
+    TexCoords = aPos;
+    gl_Position = mvp * vec4(aPos, 1.0);
 }
