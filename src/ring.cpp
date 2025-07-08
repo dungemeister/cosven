@@ -7,6 +7,7 @@ void Ring::pushSatellites(int sats_qty){
     clear();
 
     m_sat_angle = 360.0f / sats_qty;
+    m_segments = std::make_shared<RingSegment>(m_radius, m_ring_angle, sats_qty);
     for(int i = 0; i < sats_qty; i++){
         auto phi_angle = m_sat_angle * (i + 1);
         float y = glm::sin(glm::radians(phi_angle)) * m_radius;
@@ -50,8 +51,10 @@ void Ring::rotateRing(float d_angle){
 
 }
 
-void Ring::render(GLuint shaderProgram, const glm::mat4& view, const glm::mat4& projection){
+void Ring::render(GLuint shaderProgram, GLuint segmentShaderProgram, const glm::mat4& view, const glm::mat4& projection){
     m_satellites_model->Render(shaderProgram, view, projection);
+    if(m_segments)
+        m_segments->Render(segmentShaderProgram, projection * view);
 }
 
 glm::mat4 Ring::MoveToPosition(const glm::mat4& currentTransform, const glm::vec3& target) {

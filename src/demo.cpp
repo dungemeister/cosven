@@ -272,6 +272,44 @@ int imgui_system(GLFWwindow *window){
     glDeleteShader(skyboxVertexShader);
     glDeleteShader(skyboxFragmentShader);
 
+    //компиляция шейдера сегмента
+    std::string segmentVertexShaderSrc = get_source_from_file("shaders/ringsegment_vshader.glsl").c_str();
+    const char* segmentVertexShaderCSrc = segmentVertexShaderSrc.c_str();
+    GLuint segmentVertexShader = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(segmentVertexShader, 1, &segmentVertexShaderCSrc, NULL);
+    glCompileShader(segmentVertexShader);
+    glGetShaderiv(segmentVertexShader, GL_COMPILE_STATUS, &success);
+    if (!success) {
+        char infoLog[1024];
+        glGetShaderInfoLog(segmentVertexShader, sizeof(infoLog), NULL, infoLog);
+        printf("Skybox Vertex Shader Error: %s\n", infoLog);
+    }
+
+    std::string segmentFragmentShaderSrc = get_source_from_file("shaders/ringsegment_fshader.glsl").c_str();
+    const char* segmentFragmentShaderCSrc = segmentFragmentShaderSrc.c_str();
+    GLuint segmentFragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(segmentFragmentShader, 1, &segmentFragmentShaderCSrc, NULL);
+    glCompileShader(segmentFragmentShader);
+    glGetShaderiv(segmentFragmentShader, GL_COMPILE_STATUS, &success);
+    if (!success) {
+        char infoLog[512];
+        glGetShaderInfoLog(segmentFragmentShader, 512, NULL, infoLog);
+        printf("Skybox Fragment Shader Error: %s\n", infoLog);
+    }
+
+    GLuint segmentShaderProgram = glCreateProgram();
+    glAttachShader(segmentShaderProgram, segmentVertexShader);
+    glAttachShader(segmentShaderProgram, segmentFragmentShader);
+    glLinkProgram(segmentShaderProgram);
+    glGetProgramiv(segmentShaderProgram, GL_LINK_STATUS, &success);
+    if (!success) {
+        char infoLog[512];
+        glGetProgramInfoLog(segmentShaderProgram, 512, NULL, infoLog);
+        printf("Skybox Shader Program Error: %s\n", infoLog);
+    }
+    glDeleteShader(segmentVertexShader);
+    glDeleteShader(segmentFragmentShader);
+
     camera.SetPosition(glm::vec3(0.0f, 0.0f, +30.0f));
 
     NewEarth earth("textures/earth.jpg");
@@ -295,6 +333,10 @@ int imgui_system(GLFWwindow *window){
         r.pushSatellites(sats_counter);
         rings.push_back(r);
     }
+
+    auto ring = rings.front();
+    RingSegment segment(10.f, 180.0f / 5 * (1), sats_counter);
+
     while(!glfwWindowShouldClose(window)){
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         
@@ -331,15 +373,17 @@ int imgui_system(GLFWwindow *window){
         skybox.Render(skyboxShaderProgram,view, projection);
         earth.Render(shaderProgram, view, projection);
 
+        // segment.Render(segmentShaderProgram, projection * view);
+
         for(auto& ring: rings)
         {
             if (satellite_movement)
                 ring.rotateRing(sats_movespeed);
 
             if(is_orbital_camera)
-                ring.render(shaderProgram, orbit_cam.GetViewMatrix(), orbit_cam.GetProjectionMatrix());
+                ring.render(shaderProgram, segmentShaderProgram, orbit_cam.GetViewMatrix(), orbit_cam.GetProjectionMatrix());
             else 
-                ring.render(shaderProgram, camera.GetViewMatrix(), projection);
+                ring.render(shaderProgram, segmentShaderProgram, camera.GetViewMatrix(), projection);
         }
 
         if(earth_movement){
