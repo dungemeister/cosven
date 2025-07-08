@@ -162,12 +162,12 @@ int imgui_system(GLFWwindow *window){
         #version 450 core
         layout(location = 0) in vec3 aPos;
         layout(location = 1) in vec2 aTexCoord;
-        layout(location = 2) in vec3 instancePos;
+        layout(location = 2) in mat4 instanceTransform;
         uniform mat4 mvp;
         uniform mat4 offsetModel;
         out vec2 TexCoord;
         void main() {
-            gl_Position = mvp * (offsetModel * vec4(aPos, 1.0) + vec4(instancePos, 0.0));
+            gl_Position = mvp * instanceTransform *(offsetModel * vec4(aPos, 1.0));
             TexCoord = aTexCoord;
         }
     )";
@@ -273,7 +273,8 @@ int imgui_system(GLFWwindow *window){
     camera.SetPosition(glm::vec3(0.0f, 0.0f, +30.0f));
 
     NewEarth earth("textures/earth.jpg");
-    earth.PushEarth({0.f,0.f,0.f});
+    auto transform = glm::translate(glm::mat4(1.0), glm::vec3(0.f, 0.f, 0.f));
+    earth.PushEarth(transform);
 
     std::vector<std::string> faces = {
         "test_skybox/right.jpg",
@@ -287,7 +288,7 @@ int imgui_system(GLFWwindow *window){
 
     int sats_counter = 20;
     std::vector<Ring> rings;
-    for(int i = 0; i < 5; i++){
+    for(int i = 0; i < 2; i++){
         Ring r(i, "textures/body.jpg", "textures/wing.jpg");
         r.pushSatellites(sats_counter);
         rings.push_back(r);
@@ -329,17 +330,20 @@ int imgui_system(GLFWwindow *window){
         skybox.Render(skyboxShaderProgram,view, projection);
         earth.Render(shaderProgram, view, projection);
 
-        for(auto it = rings.begin();it != rings.end(); ++it)
+        for(auto& ring: rings)
         {
             if (satellite_movement)
-                it->rotateRing(sats_movespeed);
+                ring.rotateRing(sats_movespeed);
 
             if(is_orbital_camera)
-                it->render(shaderProgram, orbit_cam.GetViewMatrix(), orbit_cam.GetProjectionMatrix());
+                ring.render(shaderProgram, orbit_cam.GetViewMatrix(), orbit_cam.GetProjectionMatrix());
             else 
-                it->render(shaderProgram, camera.GetViewMatrix(), projection);
+                ring.render(shaderProgram, camera.GetViewMatrix(), projection);
         }
 
+        if(earth_movement){
+            earth.Rotate(earth_movespeed, glm::vec3(0.f, 1.f, 0.f));
+        }
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();

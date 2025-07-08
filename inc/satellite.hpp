@@ -13,9 +13,9 @@ public:
         delete wings;
         // delete antenna;
     }
-    void AddInstance(const glm::vec3& pos);
+    void AddInstance(const glm::mat4& transform);
     void RemoveInstance();
-    int  GetInstancesQty() { return m_instances_pos.size(); }
+    int  GetInstancesQty() { return m_instances_matrix.size(); }
     void RemoveAllInstances();
 
     void Render(GLuint shaderProgram, const glm::mat4& view, const glm::mat4& projection);
@@ -23,6 +23,6 @@ private:
     Model* body;
     Model* wings;
     Model* antenna;
-    std::vector<glm::vec3> m_instances_pos;
+    std::vector<glm::mat4> m_instances_matrix;
 };
 #endif //SATELLITE_HPP

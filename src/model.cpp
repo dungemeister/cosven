@@ -26,10 +26,20 @@ Model::Model(const std::vector<float>& verts, const std::vector<unsigned int>& i
         glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
         glEnableVertexAttribArray(1);
 
+        // Настройка instanceVBO для матриц
         glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
-        glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void*)0);
+        glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)0);
         glEnableVertexAttribArray(2);
+        glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(sizeof(glm::vec4)));
+        glEnableVertexAttribArray(3);
+        glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(2 * sizeof(glm::vec4)));
+        glEnableVertexAttribArray(4);
+        glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(3 * sizeof(glm::vec4)));
+        glEnableVertexAttribArray(5);
         glVertexAttribDivisor(2, 1);
+        glVertexAttribDivisor(3, 1);
+        glVertexAttribDivisor(4, 1);
+        glVertexAttribDivisor(5, 1);
         glBindVertexArray(0);
         CheckGLError("Model Setup");
     }
@@ -64,21 +74,21 @@ GLuint Model::LoadTexture(const char* filepath) {
     return texture;
 }
 
-void Model::AddInstance(const glm::vec3& pos) {
-        instancePositions.push_back(pos);
-        UpdateInstanceBuffer();
+void Model::AddInstance(const glm::mat4& transform) {
+    instanceTransforms.push_back(transform);
+    UpdateInstanceBuffer();
 }
 void Model::RemoveInstance(){
-    instancePositions.pop_back();
+    instanceTransforms.pop_back();
     UpdateInstanceBuffer();
 }
 void Model::RemoveAllInstances(){
-    instancePositions.clear();
+    instanceTransforms.clear();
     UpdateInstanceBuffer();
 }
 void Model::UpdateInstanceBuffer() {
     glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
-    glBufferData(GL_ARRAY_BUFFER, instancePositions.size() * sizeof(glm::vec3), instancePositions.data(), GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, instanceTransforms.size() * sizeof(glm::mat4), instanceTransforms.data(), GL_STATIC_DRAW);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     CheckGLError("UpdateInstanceBuffer");
 }
@@ -108,7 +118,7 @@ void Model::Render(GLuint shaderProgram, const glm::mat4& mvp, const glm::mat4& 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, texture);
     glBindVertexArray(vao);
-    glDrawElementsInstanced(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0, instancePositions.size());
+    glDrawElementsInstanced(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0, instanceTransforms.size());
     glBindVertexArray(0);
     glBindTexture(GL_TEXTURE_2D, 0);
     CheckGLError("Model Render");

@@ -278,7 +278,8 @@ int satellites_class_render(GLFWwindow *window)
         rings.push_back(r);
     }
     NewEarth earth("textures/earth.jpg");
-    earth.PushEarth({0.f, 0.f, 0.f});
+    auto transform = glm::translate(glm::mat4(1.0), glm::vec3(0.f, 0.f, 0.f));
+    earth.PushEarth(transform);
 
     const char* vertexShaderSrc = R"(
         #version 450 core

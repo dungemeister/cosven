@@ -24,11 +24,11 @@ public:
     GLuint vao, vbo, ebo, instanceVBO, texture;
     std::vector<float> vertices;
     std::vector<unsigned int> indices;
-    std::vector<glm::vec3> instancePositions;
+    std::vector<glm::mat4> instanceTransforms; // Заменяем instancePositions на матрицу модели для каждого инстанса
 
     Model(const std::vector<float>& verts, const std::vector<unsigned int>& idx, const std::string& texturePath);
 
-    void AddInstance(const glm::vec3& pos);
+    void AddInstance(const glm::mat4& pos);
     void RemoveInstance();
     void RemoveAllInstances();
     void UpdateInstanceBuffer();

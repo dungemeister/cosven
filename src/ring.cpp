@@ -1,7 +1,6 @@
 #include "ring.hpp"
 
 void Ring::pushSatellite(){
-    m_sats_qty++;
 }
 
 void Ring::pushSatellites(int sats_qty){
@@ -9,21 +8,22 @@ void Ring::pushSatellites(int sats_qty){
 
     m_sat_angle = 360.0f / sats_qty;
     for(int i = 0; i < sats_qty; i++){
-        auto phi_angle = m_sat_angle * i;
+        auto phi_angle = m_sat_angle * (i + 1);
         float y = glm::sin(glm::radians(phi_angle)) * m_radius;
         float x = glm::cos(glm::radians(phi_angle)) * glm::sin(glm::radians(m_ring_angle)) * m_radius;
         float z = glm::cos(glm::radians(phi_angle)) * glm::cos(glm::radians(m_ring_angle)) * m_radius;
         
-        m_satellites_model->AddInstance(glm::vec3(x, y, -z));
-        m_sats_qty++;
+        glm::mat4 transform = glm::translate(glm::mat4(1.0f), glm::vec3(x, y, z));
+        m_satellites_model->AddInstance(transform);
+        m_satellites_matrix.push_back({phi_angle, transform});
     }
 
 }
 
 void Ring::popSatellite(){
-    if(m_sats_qty <= 0) return;
+    if(m_satellites_matrix.size() <= 0) return;
     m_satellites_model->RemoveInstance();
-    m_sats_qty--;
+    m_satellites_matrix.pop_back();
 }
 
 void Ring::popSatellites(int sats_qty){
@@ -32,24 +32,33 @@ void Ring::popSatellites(int sats_qty){
 }
 void Ring::clear(){
     m_satellites_model->RemoveAllInstances();
-    m_sats_qty = 0;
+    m_satellites_matrix.clear();
 }
 
-void Ring::rotateRing(float angle){
+void Ring::rotateRing(float d_angle){
     m_satellites_model->RemoveAllInstances();
 
-    for(int i = 0; i < m_sats_qty; i++){
-        auto phi_angle = m_sat_angle * (i + 1) + angle;
-        float y = glm::sin(glm::radians(phi_angle)) * m_radius;
-        float x = glm::cos(glm::radians(phi_angle)) * glm::sin(glm::radians(m_ring_angle)) * m_radius;
-        float z = glm::cos(glm::radians(phi_angle)) * glm::cos(glm::radians(m_ring_angle)) * m_radius;
+    for(int i = 0; i < m_satellites_matrix.size(); i++){
+        m_satellites_matrix[i].angle += d_angle;
+        float y = glm::sin(glm::radians(m_satellites_matrix[i].angle)) * m_radius;
+        float x = glm::cos(glm::radians(m_satellites_matrix[i].angle)) * glm::sin(glm::radians(m_ring_angle)) * m_radius;
+        float z = glm::cos(glm::radians(m_satellites_matrix[i].angle)) * glm::cos(glm::radians(m_ring_angle)) * m_radius;
         
-        m_satellites_model->AddInstance(glm::vec3(x, y, -z));
+        m_satellites_matrix[i].transform_matrix = MoveToPosition(m_satellites_matrix[i].transform_matrix, glm::vec3(x, y, z)); 
+        m_satellites_model->AddInstance(m_satellites_matrix[i].transform_matrix);
     }
-    m_sat_angle += angle;
 
 }
 
 void Ring::render(GLuint shaderProgram, const glm::mat4& view, const glm::mat4& projection){
     m_satellites_model->Render(shaderProgram, view, projection);
+}
+
+glm::mat4 Ring::MoveToPosition(const glm::mat4& currentTransform, const glm::vec3& target) {
+    // Извлекаем текущее положение из матрицы (4-й столбец: x, y, z)
+    glm::vec3 currentPos = glm::vec3(currentTransform[3]);
+    // Вычисляем вектор смещения (находим разницу векторов)
+    glm::vec3 offset = target - currentPos;
+    // Применяем трансляцию
+    return glm::translate(glm::mat4(1.0f), offset) * currentTransform;
 }

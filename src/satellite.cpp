@@ -83,16 +83,16 @@ Satellite::Satellite(const std::string& body_texture_file, const std::string& wi
     // antenna = new Model(antennaVerts, wingIdx, "antenna.jpg");
 }
 
-void Satellite::AddInstance(const glm::vec3& pos) {
-    body->AddInstance(pos);
-    wings->AddInstance(pos);
-    m_instances_pos.push_back(pos);
+void Satellite::AddInstance(const glm::mat4& transform) {
+    body->AddInstance(transform);
+    wings->AddInstance(transform);
+    m_instances_matrix.push_back(transform);
 }
 
 void Satellite::RemoveInstance(){
     body->RemoveInstance();
     wings->RemoveInstance();
-    m_instances_pos.pop_back();
+    m_instances_matrix.pop_back();
 }
 void Satellite::RemoveAllInstances(){
     body->RemoveAllInstances();
