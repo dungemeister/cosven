@@ -328,14 +328,11 @@ int imgui_system(GLFWwindow *window){
 
     int sats_counter = 20;
     std::vector<Ring> rings;
-    for(int i = 0; i < 2; i++){
+    for(int i = 0; i < 5; i++){
         Ring r(i, "textures/body.jpg", "textures/wing.jpg");
         r.pushSatellites(sats_counter);
         rings.push_back(r);
     }
-
-    auto ring = rings.front();
-    RingSegment segment(10.f, 180.0f / 5 * (1), sats_counter);
 
     while(!glfwWindowShouldClose(window)){
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -372,8 +369,6 @@ int imgui_system(GLFWwindow *window){
 
         skybox.Render(skyboxShaderProgram,view, projection);
         earth.Render(shaderProgram, view, projection);
-
-        // segment.Render(segmentShaderProgram, projection * view);
 
         for(auto& ring: rings)
         {

@@ -20,3 +20,5 @@ COSmos Visualization ENgine - программа для визуализации
 ```cmake
     set(IMGUI_DIRS path_to_needed_dir) # дефолтное значение ~/opt/imgui
 ```
+
+## TODO

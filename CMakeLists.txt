@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5.0)
-project(earth_sym VERSION 0.1.0 LANGUAGES C CXX)
+project(conven VERSION 0.1.0 LANGUAGES C CXX)
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(GLFW REQUIRED glfw3)

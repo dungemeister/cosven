@@ -9,8 +9,16 @@ public:
     GLuint vao, vbo;
     std::vector<float> vertices;
     glm::vec3 color; // Цвет линии
+    RingSegment(){
+        
+        vertices.reserve(100);
+        // Настройка VAO и VBO
+        glGenVertexArrays(1, &vao);
+        glGenBuffers(1, &vbo);
+    };
+    void SetParams(float radius, float ring_angle, int sats_qty, const glm::vec3& color = glm::vec3(1.0f, 0.3f, 0.3f)) {
+        vertices.clear();
 
-    RingSegment(float radius, float ring_angle, int sats_qty, const glm::vec3& color = glm::vec3(1.0f, 0.3f, 0.3f)) {
         this->color = color;
         float sat_angle = 360.0f / sats_qty;
 
@@ -29,9 +37,6 @@ public:
         vertices.push_back(vertices[1]);
         vertices.push_back(vertices[2]);
 
-        // Настройка VAO и VBO
-        glGenVertexArrays(1, &vao);
-        glGenBuffers(1, &vbo);
         glBindVertexArray(vao);
         glBindBuffer(GL_ARRAY_BUFFER, vbo);
         glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_STATIC_DRAW);
@@ -76,7 +81,7 @@ public:
         m_ring_angle = 180.0f / 5 * (m_ring_num + 1);
         m_satellites_matrix.reserve(100);
         m_satellites_model = std::make_shared<Satellite>(body_texture_file, wing_texture_file);
-
+        m_segments = std::make_shared<RingSegment>();
     }
     ~Ring() = default;
 
