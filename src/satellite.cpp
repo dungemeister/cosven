@@ -97,6 +97,7 @@ void Satellite::RemoveInstance(){
 void Satellite::RemoveAllInstances(){
     body->RemoveAllInstances();
     wings->RemoveAllInstances();
+    m_instances_matrix.clear();
 }
 void Satellite::Render(GLuint shaderProgram, const glm::mat4& view, const glm::mat4& projection) {
     glm::mat4 mvp = projection * view;
