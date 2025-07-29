@@ -78,7 +78,7 @@ public:
     m_ring_num(ring_num),
     m_radius(10)
     {
-        m_ring_angle = 180.0f / 5 * (m_ring_num + 1);
+        m_ring_angle = 180.0f / 30 * (m_ring_num + 1);
         m_satellites_matrix.reserve(100);
         m_satellites_model = std::make_shared<Satellite>(body_texture_file, wing_texture_file);
         m_segments = std::make_shared<RingSegment>();

@@ -22,7 +22,7 @@ public:
 private:
     Model* body;
     Model* wings;
-    Model* antenna;
+    // Model* antenna;
     std::vector<glm::mat4> m_instances_matrix;
 };
 #endif //SATELLITE_HPP

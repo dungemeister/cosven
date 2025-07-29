@@ -327,8 +327,9 @@ int imgui_system(GLFWwindow *window){
     NewSkybox skybox(faces);
 
     int sats_counter = 20;
+    int rings_counter = 5;
     std::vector<Ring> rings;
-    for(int i = 0; i < 5; i++){
+    for(int i = 0; i < rings_counter; i++){
         Ring r(i, "textures/body.jpg", "textures/wing.jpg");
         r.pushSatellites(sats_counter);
         rings.push_back(r);
@@ -395,12 +396,30 @@ int imgui_system(GLFWwindow *window){
             ImGui::SetNextWindowSize(size);
 
             ImGui::Begin("Контроллер плоскостей");
-                        
+
+            {
+                if(ImGui::SliderInt("Количество плоскостей", &rings_counter, 0, 30)){
+                    std::cout << rings_counter << "\n";
+                    if(rings.size() != rings_counter){
+                        while(rings.size() != rings_counter){
+                            if(rings_counter > rings.size()){
+                                Ring r(rings.size(), "textures/body.jpg", "textures/wing.jpg");
+                                r.pushSatellites(sats_counter);
+                                rings.push_back(r);
+                            }
+                            else{
+                                rings.pop_back();
+                            }
+                        }
+                    }
+                }
+            }   
+
             if(ImGui::Button("Движение Земли")) earth_movement ^= true;
             ImGui::SliderFloat("Скорость вращения Земли", &earth_movespeed, 0.0, 15.0f, "%.1f");
 
             ImGui::SeparatorText("Спутники");
-            if(ImGui::SliderInt("Спутники плоскости", &sats_counter, 0, 30)){
+            if(ImGui::SliderInt("Спутники плоскости", &sats_counter, 0, 30) && (rings.size() > 0)){
                 std::cout << sats_counter << "\n";
                 auto size = rings.at(0).getSatellitesQty();
                 if(size != sats_counter){
