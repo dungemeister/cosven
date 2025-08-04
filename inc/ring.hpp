@@ -75,15 +75,42 @@ public:
         glm::mat4   transform_matrix;
     };
     Ring(int ring_num, const std::string& body_texture_file, const std::string& wing_texture_file):
-    m_ring_num(ring_num),
-    m_radius(10)
+        m_ring_num(ring_num),
+        m_radius(10)
     {
-        m_ring_angle = 180.0f / 30 * (m_ring_num + 1);
+        rings_qty++;
+        updateRingsAngle();
         m_satellites_matrix.reserve(100);
         m_satellites_model = std::make_shared<Satellite>(body_texture_file, wing_texture_file);
         m_segments = std::make_shared<RingSegment>();
+
     }
-    ~Ring() = default;
+    Ring(const Ring& other):
+        m_radius(other.m_radius),
+        m_ring_angle(other.m_ring_angle),
+        m_ring_num(other.m_ring_num),
+        m_sat_angle(other.m_sat_angle),
+        m_satellites_matrix(other.m_satellites_matrix),
+        m_satellites_model(other.m_satellites_model ? std::make_shared<Satellite>(*other.m_satellites_model) : nullptr),
+        m_segments(other.m_segments ? std::make_shared<RingSegment>(*other.m_segments) : nullptr)
+    {
+        rings_qty++;
+    }
+    Ring(Ring&& other) noexcept:
+        m_radius(other.m_radius),
+        m_ring_angle(other.m_ring_angle),
+        m_ring_num(other.m_ring_num),
+        m_sat_angle(other.m_sat_angle),
+        m_satellites_matrix(other.m_satellites_matrix),
+        m_satellites_model(std::move(other.m_satellites_model)),
+        m_segments(std::move(other.m_segments))
+    {
+        rings_qty++;
+
+    }
+    ~Ring(){
+        rings_qty--;
+    }
 
     void pushSatellites(int sats_qty);
     void pushSatellite();
@@ -96,7 +123,11 @@ public:
     void rotateRing(float d_angle);
     void shiftRingAngle(float delta_angle);
     void render(GLuint shaderProgram, GLuint segmentShaderProgram, const glm::mat4& view, const glm::mat4& projection);
+
+    void updateRingsAngle() { m_ring_angle = 180.0f / rings_qty * (m_ring_num + 1); }
 private:
+    static int rings_qty;
+    const int m_segments_qty = 30;
     std::vector<SatData> m_satellites_matrix;
     std::shared_ptr<Satellite> m_satellites_model;
     std::shared_ptr<RingSegment> m_segments;
@@ -104,7 +135,6 @@ private:
     float m_radius;
     float m_ring_angle;
     float m_sat_angle;
-
     glm::mat4 MoveToPosition(const glm::mat4& currentTransform, const glm::vec3& target);
 };
 

@@ -57,7 +57,7 @@ add_executable(${PROJECT_NAME} src/main.cpp)
 # add_definitions(-DSTB_IMAGE_IMPLEMENTATION)
 target_sources(${PROJECT_NAME} PRIVATE ${SOURCES} ${IMGUI_SOURCES} ${NFD_SOURCES})
 
-target_include_directories(${PROJECT_NAME} PRIVATE "inc/" ${SHADERS_DIR} ${CMAKE_SOURCE_DIR})
+target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/inc/ ${SHADERS_DIR} ${CMAKE_SOURCE_DIR})
 target_include_directories(${PROJECT_NAME} PRIVATE ${GLM_INCLUDE_DIRS} ${GTK_INCLUDE_DIRS} ${STB_INCLUDE_DIRS} ${GLIB_INCLUDE_DIRS})
 target_include_directories(${PROJECT_NAME} PRIVATE ${IMGUI_DIRS} ${NFD_DIRS})
 

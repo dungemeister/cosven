@@ -37,6 +37,7 @@ bool imgui_hovered = false;
 
 bool camera_movement = false;
 static bool is_orbital_camera = true;
+int Ring::rings_qty = 0;
 
 void glfw_scroll_callback(GLFWwindow *window, double xoffset, double yoffset)
 {
@@ -329,10 +330,14 @@ int imgui_system(GLFWwindow *window){
     int sats_counter = 20;
     int rings_counter = 5;
     std::vector<Ring> rings;
+    rings.reserve(rings_counter);
     for(int i = 0; i < rings_counter; i++){
-        Ring r(i, "textures/body.jpg", "textures/wing.jpg");
-        r.pushSatellites(sats_counter);
-        rings.push_back(r);
+        rings.emplace_back(i, "textures/body.jpg", "textures/wing.jpg");
+    }
+
+    for(auto& ring: rings){
+        ring.updateRingsAngle();
+        ring.pushSatellites(sats_counter);
     }
 
     while(!glfwWindowShouldClose(window)){
@@ -403,13 +408,16 @@ int imgui_system(GLFWwindow *window){
                     if(rings.size() != rings_counter){
                         while(rings.size() != rings_counter){
                             if(rings_counter > rings.size()){
-                                Ring r(rings.size(), "textures/body.jpg", "textures/wing.jpg");
-                                r.pushSatellites(sats_counter);
-                                rings.push_back(r);
+                                rings.emplace_back(rings.size(), "textures/body.jpg", "textures/wing.jpg");
                             }
                             else{
                                 rings.pop_back();
                             }
+                        }
+                        for(auto& ring: rings){
+                            ring.updateRingsAngle();
+                            ring.pushSatellites(sats_counter);
+
                         }
                     }
                 }

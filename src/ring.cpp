@@ -8,7 +8,8 @@ void Ring::pushSatellites(int sats_qty){
 
     m_sat_angle = 360.0f / sats_qty;
 
-    m_segments->SetParams(m_radius, m_ring_angle, sats_qty);
+    m_segments->SetParams(m_radius, m_ring_angle, m_segments_qty);
+
     for(int i = 0; i < sats_qty; i++){
         auto phi_angle = m_sat_angle * (i + 1);
         float y = glm::sin(glm::radians(phi_angle)) * m_radius;
