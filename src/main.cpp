@@ -364,7 +364,11 @@ int main(int, char**){
     glfwSetWindowSizeCallback(window, framebuffer_size_callback);
 
     // int res = torus_demo(window);
-    int res = imgui_system(window);
+    // int res = imgui_system(window);
+    int res = demo_mvc(window);
+
+    glfwDestroyWindow(window);
+    glfwTerminate();
     return res;
     
 }

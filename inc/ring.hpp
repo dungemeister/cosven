@@ -9,8 +9,10 @@ public:
     GLuint vao, vbo;
     std::vector<float> vertices;
     glm::vec3 color; // Цвет линии
-    RingSegment(){
-        
+    glm::vec3 offset_vec;
+
+    RingSegment(glm::vec3 offset_vec_ = {0.f, 0.f, 0.f}){
+        offset_vec = offset_vec_;
         vertices.reserve(100);
         // Настройка VAO и VBO
         glGenVertexArrays(1, &vao);
@@ -25,9 +27,10 @@ public:
         // Генерируем вершины для линий между спутниками
         for (int i = 0; i < sats_qty; i++) {
             float phi_angle = sat_angle * i;
-            float y = glm::sin(glm::radians(phi_angle)) * radius;
-            float x = glm::cos(glm::radians(phi_angle)) * glm::sin(glm::radians(ring_angle)) * radius;
-            float z = glm::cos(glm::radians(phi_angle)) * glm::cos(glm::radians(ring_angle)) * radius;
+            float y = glm::sin(glm::radians(phi_angle)) * radius + offset_vec.y;
+            float x = glm::cos(glm::radians(phi_angle)) * glm::sin(glm::radians(ring_angle)) * radius + offset_vec.x;
+            float z = glm::cos(glm::radians(phi_angle)) * glm::cos(glm::radians(ring_angle)) * radius + offset_vec.z;
+            
             vertices.push_back(x);
             vertices.push_back(y);
             vertices.push_back(z);
@@ -74,21 +77,23 @@ public:
         float       angle;
         glm::mat4   transform_matrix;
     };
-    Ring(int ring_num, const std::string& body_texture_file, const std::string& wing_texture_file):
+    Ring(int ring_num, const std::string& body_texture_file, const std::string& wing_texture_file, glm::vec3 offset_vec = glm::vec3(0.f, 0.f, 0.f)):
         m_ring_num(ring_num),
-        m_radius(10)
+        m_radius(10),
+        m_offset_vector(offset_vec)
     {
         rings_qty++;
         updateRingsAngle();
         m_satellites_matrix.reserve(100);
         m_satellites_model = std::make_shared<Satellite>(body_texture_file, wing_texture_file);
-        m_segments = std::make_shared<RingSegment>();
+        m_segments = std::make_shared<RingSegment>(offset_vec);
 
     }
     Ring(const Ring& other):
         m_radius(other.m_radius),
         m_ring_angle(other.m_ring_angle),
         m_ring_num(other.m_ring_num),
+        m_offset_vector(other.m_offset_vector),
         m_sat_angle(other.m_sat_angle),
         m_satellites_matrix(other.m_satellites_matrix),
         m_satellites_model(other.m_satellites_model ? std::make_shared<Satellite>(*other.m_satellites_model) : nullptr),
@@ -100,6 +105,7 @@ public:
         m_radius(other.m_radius),
         m_ring_angle(other.m_ring_angle),
         m_ring_num(other.m_ring_num),
+        m_offset_vector(other.m_offset_vector),
         m_sat_angle(other.m_sat_angle),
         m_satellites_matrix(other.m_satellites_matrix),
         m_satellites_model(std::move(other.m_satellites_model)),
@@ -125,6 +131,8 @@ public:
     void render(GLuint shaderProgram, GLuint segmentShaderProgram, const glm::mat4& view, const glm::mat4& projection);
 
     void updateRingsAngle() { m_ring_angle = 180.0f / rings_qty * (m_ring_num + 1); }
+    void setOffsetVector(const glm::vec3& vector) { m_offset_vector = vector; }
+
 private:
     static int rings_qty;
     const int m_segments_qty = 30;
@@ -135,6 +143,8 @@ private:
     float m_radius;
     float m_ring_angle;
     float m_sat_angle;
+    glm::vec3 m_offset_vector;
+
     glm::mat4 MoveToPosition(const glm::mat4& currentTransform, const glm::vec3& target);
 };
 

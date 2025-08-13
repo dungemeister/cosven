@@ -1,7 +1,7 @@
 #include "earth.hpp"
 
-NewEarth::NewEarth(const std::string& texture_file):
-    m_radius(8.0f),
+NewEarth::NewEarth(const std::string& texture_file, float radius):
+    m_radius(radius),
     m_indices(m_indices_qty),
     m_transform_matrix(1.0f)
 {
@@ -50,7 +50,9 @@ NewEarth::NewEarth(const std::string& texture_file):
     m_earth = std::make_shared<Model>(m_vertices, m_indices, texture_file);
 }
 
-void NewEarth::PushEarth(const glm::mat4& transform){
+void NewEarth::PushEarth(const glm::vec3& coord){
+    m_center_coords = coord;
+    auto transform = glm::translate(glm::mat4(1.0), m_center_coords);
     m_earth->AddInstance(transform);
 }
 

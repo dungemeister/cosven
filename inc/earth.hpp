@@ -1,3 +1,6 @@
+#ifndef EARTH_HPP
+#define EARTH_HPP
+
 #include <iostream>
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
@@ -17,9 +20,9 @@ public:
         glm::vec2 texture;
     };
 
-    NewEarth(const std::string& texture_file);
+    NewEarth(const std::string& texture_file, float radius = 8.0f);
     ~NewEarth() = default;
-    void PushEarth(const glm::mat4& transform);
+    void PushEarth(const glm::vec3& coord);
     void PopEarth();
     void Rotate(float degree, glm::vec3 axis_vec){
         m_transform_matrix = glm::rotate(m_transform_matrix, glm::radians(degree), axis_vec);
@@ -31,15 +34,20 @@ public:
 
         }
     }
+    glm::vec3 GetCenterCoords() { return m_center_coords; }
 private:
     std::vector<float> m_vertices;
     std::vector<uint> m_indices;
     float m_radius;
+    glm::vec3 m_center_coords;
     const static GLuint m_vertical_qty = 180/VER_STEP_ANGLE + 1;
     const static GLuint m_horizontal_qty = 360/HOR_STEP_ANGLE + 1;
     const static GLuint m_vertices_qty = m_vertical_qty * m_horizontal_qty;
     const static GLuint m_indices_qty = 2 * (m_vertices_qty - m_horizontal_qty);
 
     glm::mat4 m_transform_matrix;
-    std::shared_ptr<Model> m_earth;    
+    std::shared_ptr<Model> m_earth;
+
 };
+
+#endif //EARTH_HPP

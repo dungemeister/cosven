@@ -37,16 +37,15 @@ class OrbitCamera: public Camera{
 public:    
     OrbitCamera()
     {
-        distance = 20.0f;
+        distance = 60.0f;
         angle = 0.0f;
-
         position = glm::vec3(distance*cos(angle), 0.0f, distance*sin(angle));
         target = glm::vec3(0.0f);
         up = glm::vec3(0.0f, 1.0f, 0.0f);
         fov = glm::radians(45.0f);
         aspect = 1920.0f / 1080.0f;
         nearClip = 0.1f;
-        farClip = 100.0f;
+        farClip = 200.0f;
     }
     ~OrbitCamera() = default;
     
@@ -58,17 +57,17 @@ public:
     float GetDistance() { return distance; }
     void SetDistance(float dist) {
         distance = dist;
-        position = glm::vec3(distance*cos(angle), 0.0f, distance*sin(angle));
+        position = target + glm::vec3(distance*cos(angle), 0.0f, distance*sin(angle));
     }
     void IncreaseDistance(float dist){
         distance -= dist;
-        position = glm::vec3(distance*cos(angle), 0.0f, distance*sin(angle));
+        position = target + glm::vec3(distance*cos(angle), 0.0f, distance*sin(angle));
     }
     void UpdateAngle(float delta_angle){
         angle -= delta_angle * MOUSE_SENSITIVITY;
-        position = glm::vec3(distance*cos(angle), 0.0f, distance*sin(angle));
+        position = target + glm::vec3(distance*cos(angle), 0.0f, distance*sin(angle));
     }
-
+    void setTarget(const glm::vec3& target_) { target = target_; }
 private:
     float distance;
     float angle;

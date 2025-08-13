@@ -50,6 +50,7 @@ set(SOURCES src/shaderHandler.cpp
             src/figures.cpp
             src/demo.cpp
             src/ring.cpp
+            src/demo_mvc.cpp
             )
 
 

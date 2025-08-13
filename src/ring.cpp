@@ -16,7 +16,7 @@ void Ring::pushSatellites(int sats_qty){
         float x = glm::cos(glm::radians(phi_angle)) * glm::sin(glm::radians(m_ring_angle)) * m_radius;
         float z = glm::cos(glm::radians(phi_angle)) * glm::cos(glm::radians(m_ring_angle)) * m_radius;
         
-        glm::mat4 transform = glm::translate(glm::mat4(1.0f), glm::vec3(x, y, z));
+        glm::mat4 transform = glm::translate(glm::mat4(1.0f), glm::vec3(x, y, z) + m_offset_vector);
         m_satellites_model->AddInstance(transform);
         m_satellites_matrix.push_back({phi_angle, transform});
     }
@@ -47,7 +47,7 @@ void Ring::rotateRing(float d_angle){
         float x = glm::cos(glm::radians(m_satellites_matrix[i].angle)) * glm::sin(glm::radians(m_ring_angle)) * m_radius;
         float z = glm::cos(glm::radians(m_satellites_matrix[i].angle)) * glm::cos(glm::radians(m_ring_angle)) * m_radius;
         
-        m_satellites_matrix[i].transform_matrix = MoveToPosition(m_satellites_matrix[i].transform_matrix, glm::vec3(x, y, z)); 
+        m_satellites_matrix[i].transform_matrix = MoveToPosition(m_satellites_matrix[i].transform_matrix, glm::vec3(x, y, z) + m_offset_vector); 
         m_satellites_model->AddInstance(m_satellites_matrix[i].transform_matrix);
     }
 

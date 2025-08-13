@@ -10,6 +10,7 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include "demo.hpp"
+#include "demo_mvc.hpp"
 #include "ring.hpp"
 #include "earth.hpp"
 #include "skybox.hpp"
@@ -157,8 +158,20 @@ std::string get_source_from_file(std::string filepath){
     return shaderCode;
 }
 
+int demo_mvc(GLFWwindow *window){
+    
+    IMGUI_CHECKVERSION();
+
+    DemoModel model;
+    DemoViewModel view_model(window, model);
+    DemoApplication app(view_model, window);
+
+    app.run();
+
+    return 0;
+}
+
 int imgui_system(GLFWwindow *window){
-    glm::mat4 model = glm::mat4(1.0f);
     glm::mat4 view = glm::mat4(1.0f);
     glm::mat4 projection = glm::mat4(1.0f);
     int g_width = 1920;
@@ -314,8 +327,7 @@ int imgui_system(GLFWwindow *window){
     camera.SetPosition(glm::vec3(0.0f, 0.0f, +30.0f));
 
     NewEarth earth("textures/earth.jpg");
-    auto transform = glm::translate(glm::mat4(1.0), glm::vec3(0.f, 0.f, 0.f));
-    earth.PushEarth(transform);
+    earth.PushEarth(glm::vec3(0.f, 0.f, 0.f));
 
     std::vector<std::string> faces = {
         "test_skybox/right.jpg",

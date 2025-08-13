@@ -5,7 +5,10 @@
 #include "orbit_camera.hpp"
 #include "GLFW/glfw3.h"
 #include <functional>
+#include <memory>
 
 int imgui_system(GLFWwindow *window);
+int demo_mvc(GLFWwindow *window);
+
 
 #endif //OPENGL_DEMO_HPP
