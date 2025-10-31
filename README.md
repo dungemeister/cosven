@@ -1,10 +1,8 @@
-## Описание
-COSmos Visualization ENgine - программа для визуализации космических объектов и спутниковых систем. Основная задача - визуализация низкоорбитальной системы спутниковой связи с процессом передачи трафика между спутниками.
-
 ## Description
 
-The application renders planes with satellites as part of a low-orbit satellite constellation.
+COSmos Visualization Engine is a program for visualizing space objects and satellite systems. Its primary purpose is to visualize low-orbit satellite communications systems, including the process of transmitting traffic between satellites.
 
+The application rendering planes with satellites as part of a low-orbit satellite constellation.
 ![DemoGif](assets/demo/demo.gif)
 
 ## Необходимые пакеты
