@@ -42,6 +42,7 @@ public:
 
     bool satellite_movement = false;
     bool planets_movement = false;
+    bool planets_rotation = false;
     float satellite_speed = 0.2f;
     int rings_counter = 5;
     int sats_counter = 20;
@@ -122,11 +123,13 @@ struct ShadersModel{
     GLuint segment_shader_program = 0;
     GLuint earth_shader_program = 0;
     GLuint skybox_shader_program = 0;
+    GLuint border_shader_program = 0;
 
     ShadersModel(){
         satelliteShadersInit();
         segmentShaderProgramInit();
         skyboxShaderInit();
+        borderShaderInit();
     }
 
     void satelliteShadersInit(){
@@ -254,6 +257,47 @@ struct ShadersModel{
         }
         glDeleteShader(skyboxVertexShader);
         glDeleteShader(skyboxFragmentShader);
+    }
+
+    void borderShaderInit(){
+        // Компиляция шейдера skybox
+        GLint success;
+        std::string borderVertexShaderSrc = get_source_from_file("shaders/satellite_vshader.glsl").c_str();
+        const char* borderVertexShaderCSrc = borderVertexShaderSrc.c_str();
+        GLuint borderVertexShader = glCreateShader(GL_VERTEX_SHADER);
+        glShaderSource(borderVertexShader, 1, &borderVertexShaderCSrc, NULL);
+        glCompileShader(borderVertexShader);
+        glGetShaderiv(borderVertexShader, GL_COMPILE_STATUS, &success);
+        if (!success) {
+            char infoLog[1024];
+            glGetShaderInfoLog(borderVertexShader, sizeof(infoLog), NULL, infoLog);
+            printf("Skybox Vertex Shader Error: %s\n", infoLog);
+        }
+
+        std::string borderFragmentShaderSrc = get_source_from_file("shaders/border_fshader.glsl").c_str();
+        const char* borderFragmentShaderCSrc = borderFragmentShaderSrc.c_str();
+        GLuint borderFragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+        glShaderSource(borderFragmentShader, 1, &borderFragmentShaderCSrc, NULL);
+        glCompileShader(borderFragmentShader);
+        glGetShaderiv(borderFragmentShader, GL_COMPILE_STATUS, &success);
+        if (!success) {
+            char infoLog[512];
+            glGetShaderInfoLog(borderFragmentShader, 512, NULL, infoLog);
+            printf("Skybox Fragment Shader Error: %s\n", infoLog);
+        }
+
+        border_shader_program = glCreateProgram();
+        glAttachShader(border_shader_program, borderVertexShader);
+        glAttachShader(border_shader_program, borderFragmentShader);
+        glLinkProgram(border_shader_program);
+        glGetProgramiv(border_shader_program, GL_LINK_STATUS, &success);
+        if (!success) {
+            char infoLog[512];
+            glGetProgramInfoLog(border_shader_program, 512, NULL, infoLog);
+            printf("Skybox Shader Program Error: %s\n", infoLog);
+        }
+        glDeleteShader(borderVertexShader);
+        glDeleteShader(borderFragmentShader);
     }
 
     std::string get_source_from_file(std::string filepath){
@@ -403,16 +447,23 @@ public:
 
     size_t getRingsQuantity() { return m_model.rings.size(); }
     size_t getSatellitesQuantity() { return m_model.sats_counter; }
+    void setSatellitesQuantity(int sats_qty) { m_model.sats_counter = sats_qty; }
 
     void setPlanetsMovement(bool state) { m_model.planets_movement = state; }
     bool getPlanetsMovement() { return m_model.planets_movement; }
+
+    void setPlanetsRotation(bool state) { m_model.planets_rotation = state; }
+    bool getPlanetsRotation() { return m_model.planets_rotation; }
 
     void setSatellitesMovement(bool state) { m_model.satellite_movement = state; }
     bool getSatellitesMovement() { return m_model.satellite_movement; }
 
     glm::vec3 getCameraPosition() { return m_model.is_orbital_camera ? m_model.orbit_cam.GetPosition(): m_model.camera.Position; }
+    void setCameraPosition(glm::vec3 pos) { m_model.orbit_cam.setPosition(pos); }
     float getDistance() { return m_model.is_orbital_camera ? m_model.orbit_cam.GetDistance(): m_model.camera.GetDistance(); }
-    void setCameraPosition(const glm::vec3& pos ) { m_model.orbit_cam.setTarget(pos); }
+    
+    glm::vec3   getCameraTarget() { return m_model.orbit_cam.getTarget(); }
+    void        setCameraTarget(const glm::vec3& target ) { m_model.orbit_cam.setTarget(target); }
     
     void setCameraMovement(bool state) { m_model.camera_movement = state; }
     bool getCameraMovement() { return m_model.camera_movement; }
@@ -420,6 +471,7 @@ public:
     void cameraMove(float angle) { m_model.orbit_cam.Update(angle); }
 
     glm::vec3 getPlanetCenterVec(int planet_index) { return m_model.planets[planet_index].GetCenterCoords(); }
+
     void updateRings(int new_count){
         while(m_model.rings.size() != new_count){
             if(new_count > m_model.rings.size()){
@@ -442,6 +494,7 @@ public:
             for(auto& ring: m_model.rings){
                 ring.pushSatellites(new_counter);
             }
+            setSatellitesQuantity(new_counter);
         }
     }
 
@@ -466,7 +519,7 @@ public:
 
             if(m_model.is_orbital_camera)
                 ring.render(m_shaders_model.satellite_shader_program, m_shaders_model.segment_shader_program,
-                 m_model.orbit_cam.GetViewMatrix(), m_model.orbit_cam.GetProjectionMatrix());
+                 m_model.orbit_cam.GetViewMatrix(), m_model.orbit_cam.GetProjectionMatrix(), m_shaders_model.border_shader_program);
             // else 
             //     ring.render(m_shaders_model.satellite_shader_program, segmentShaderProgram, m_model.camera.GetViewMatrix(), projection);
         }
@@ -474,7 +527,9 @@ public:
 
     void renderPlanets(){
         for(auto& planet: m_model.planets){
-            if(m_model.planets_movement) planet.Rotate(0.1f, glm::vec3(0.f, 1.f, 0.f));
+            if(m_model.planets_rotation) planet.Rotate(0.1f, glm::vec3(0.f, 1.f, 0.f));
+            if(m_model.planets_movement) planet.Move();
+
             planet.Render(m_shaders_model.satellite_shader_program,
                           m_model.orbit_cam.GetViewMatrix(), m_model.orbit_cam.GetProjectionMatrix());
         }
@@ -484,6 +539,24 @@ public:
         if(m_model.camera_movement) cameraMove(0.03f);
     }
 
+    std::vector<std::string> getRingsDisplayNames() {
+        std::vector<std::string> res;
+        for(auto& ring: m_model.rings){
+            res.push_back(ring.getDisplayName());
+        }
+        return res;
+    }
+    void selectRingByDisplayName(const std::string& display_name){
+        for(auto& ring: m_model.rings){
+            auto ring_name = ring.getDisplayName();
+            if(ring_name == display_name){
+                ring.setSelected(true);
+            }
+            else{
+                ring.setSelected(false);
+            }
+        }
+    }
 private:
     GLFWwindow *m_window;
     DemoModel& m_model;
@@ -515,8 +588,14 @@ public:
         io.Fonts->AddFontFromFileTTF("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 16.0f, nullptr, io.Fonts->GetGlyphRangesCyrillic());
         io.Fonts->Build();
 
+        glEnable(GL_DEPTH_TEST);
+        glDepthFunc(GL_LESS);
+        // glEnable(GL_STENCIL_TEST);
+        // glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+        // glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+
         while(!glfwWindowShouldClose(m_window)){
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
             glfwPollEvents();
             updateFPS();
             
@@ -537,7 +616,7 @@ public:
     void render(){
         // using namespace std::chrono_literals;
         // auto end = std::chrono::steady_clock::now() + 16ms;
-        
+        // Сначала рендерим объекты, а затем GUI часть
         m_view_model.render();
 
         ImGui_ImplOpenGL3_NewFrame();
@@ -586,17 +665,22 @@ public:
         ImGui::PushItemWidth(200.0f); // Установить ширину слайдера в 200 пикселей
         if(ImGui::SliderInt("Количество плоскостей", &rings_counter, 0, 10)){
             m_view_model.updateRings(rings_counter);
+            UpdateRingsItems();
         }
 
         if(ImGui::SliderInt("Количество спутников", &sats_counter, 0, 30) && (m_view_model.getRingsQuantity() > 0)){
             m_view_model.updateSatellites(sats_counter);
         }
-        ImGui::PopItemWidth();
 
         if(ImGui::Button("Движение спутников")){
             m_view_model.setSatellitesMovement(m_view_model.getSatellitesMovement() ^ true);
         }
 
+        if(ImGui::Combo("Список плоскостей", &selected_ring_index, m_rings_items.data(), m_rings_items.size())){
+            m_view_model.selectRingByDisplayName(m_rings_items[selected_ring_index]);
+        }
+        
+        ImGui::PopItemWidth();
         m_view_model.setImguiMainWidgetSize(ImGui::GetWindowSize());
         
         ImGui::End();
@@ -609,24 +693,24 @@ public:
         ImGui::SetNextWindowPos(pos_2);
         ImGui::SetNextWindowSize(size_2);
         ImGui::Begin("Контроллер камеры", NULL, ImGuiWindowFlags_NoResize |
-
                     ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse);
         
         ImGui::PushItemWidth(200.0f); // Установить ширину слайдера в 200 пикселей
         
         if(ImGui::Combo("Список планет", &selected_planet_index, m_planets_items.data(), m_planets_items.size())){
-            m_view_model.setCameraPosition(m_view_model.getPlanetCenterVec(selected_planet_index));
+            m_view_model.setCameraTarget(m_view_model.getPlanetCenterVec(selected_planet_index));
         }
         if(ImGui::Button("Полёт камеры")){
             m_view_model.setCameraMovement(m_view_model.getCameraMovement() ^ true);
         }
         ImGui::LabelText("Орбитальная камера", "Текущая камера:");
         auto pos = m_view_model.getCameraPosition();
-        ImGui::Text("x: %.2f", pos.x);
-        ImGui::SameLine(); ImGui::Text("y: %.2f", pos.y);
-        ImGui::SameLine(); ImGui::Text("z: %.2f", pos.z);
-        ImGui::SameLine(); ImGui::Text("dist: %.2f", m_view_model.getDistance());
+        ImGui::Text("Позиция x: %.2f y: %.2f z: %.2f", pos.x, pos.y, pos.z);
         
+        auto target = m_view_model.getCameraTarget();
+        ImGui::Text("Таргет x: %.2f y: %.2f z: %.2f", target.x, target.y, target.z);
+
+        ImGui::Text("Расстояние: %.2f", m_view_model.getDistance());
         ImGui::PopItemWidth();
 
         m_view_model.setImguiSecWidgetSize(ImGui::GetWindowSize());
@@ -644,9 +728,10 @@ public:
         ImGui::Begin("Контроллер планет", NULL, ImGuiWindowFlags_NoResize |
                     ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse);
         if(ImGui::Button("Вращение планет")){
-            m_view_model.setPlanetsMovement(m_view_model.getPlanetsMovement() ^ true);
+            m_view_model.setPlanetsRotation(m_view_model.getPlanetsRotation() ^ true);
         }
         if(ImGui::Button("Движение планет")){
+            m_view_model.setPlanetsMovement(m_view_model.getPlanetsMovement() ^ true);
         }
         ImGui::End();
 
@@ -671,8 +756,22 @@ private:
     std::vector<const char*> m_planets_items = {"Солнце", "Меркурий", "Земля", "Марс"};
     int selected_planet_index = 2;
 
+    std::vector<std::string> m_rings_names = {};
+    std::vector<const char*> m_rings_items = {};
+    int selected_ring_index = -1;
+
     double lastTime = 0.0;
     int frameCount = 0;
     float fps = 0.0f;
+
+    void UpdateRingsItems(){
+        m_rings_items.clear();
+        m_rings_items.reserve(m_view_model.getRingsQuantity());
+
+        m_rings_names = m_view_model.getRingsDisplayNames();
+        for(auto& name: m_rings_names){
+            m_rings_items.push_back(name.c_str());
+        }
+    }
 };
 #endif //DEMO_MVC_HPP

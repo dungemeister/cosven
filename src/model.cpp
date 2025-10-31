@@ -104,14 +104,14 @@ void Model::Render(GLuint shaderProgram, const glm::mat4& mvp, const glm::mat4& 
     
     GLint offsetLoc = glGetUniformLocation(shaderProgram, "offsetModel");
     if (offsetLoc == -1) {
-        printf("Ошибка: униформа 'mvp' не найдена\n");
+        printf("Ошибка: униформа 'offsetModel' не найдена\n");
     } else {
         glUniformMatrix4fv(offsetLoc, 1, GL_FALSE, &offsetModel[0][0]);
     }
 
     GLint texLoc = glGetUniformLocation(shaderProgram, "texture1");
     if (texLoc == -1) {
-        printf("Ошибка: униформа 'texture1' не найдена\n");
+        // printf("Ошибка: униформа 'texture1' не найдена\n");
     } else {
         glUniform1i(texLoc, 0);
     }
@@ -122,4 +122,8 @@ void Model::Render(GLuint shaderProgram, const glm::mat4& mvp, const glm::mat4& 
     glBindVertexArray(0);
     glBindTexture(GL_TEXTURE_2D, 0);
     CheckGLError("Model Render");
+}
+
+void Model::Scale(float scale){
+    // instanceTransforms = glm::scale(instanceTransforms, glm::vec3(scale, scale, scale));
 }

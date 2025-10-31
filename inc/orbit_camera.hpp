@@ -39,8 +39,8 @@ public:
     {
         distance = 60.0f;
         angle = 0.0f;
-        position = glm::vec3(distance*cos(angle), 0.0f, distance*sin(angle));
         target = glm::vec3(0.0f);
+        position = glm::vec3(distance*cos(angle), distance*sin(1.f), distance*sin(angle));
         up = glm::vec3(0.0f, 1.0f, 0.0f);
         fov = glm::radians(45.0f);
         aspect = 1920.0f / 1080.0f;
@@ -57,17 +57,21 @@ public:
     float GetDistance() { return distance; }
     void SetDistance(float dist) {
         distance = dist;
-        position = target + glm::vec3(distance*cos(angle), 0.0f, distance*sin(angle));
+        position = target + glm::vec3(distance*cos(angle), distance*sin(1.f), distance*sin(angle));
     }
     void IncreaseDistance(float dist){
         distance -= dist;
-        position = target + glm::vec3(distance*cos(angle), 0.0f, distance*sin(angle));
+        position = target + glm::vec3(distance*cos(angle), distance*sin(1.f), distance*sin(angle));
     }
     void UpdateAngle(float delta_angle){
         angle -= delta_angle * MOUSE_SENSITIVITY;
-        position = target + glm::vec3(distance*cos(angle), 0.0f, distance*sin(angle));
+        position = target + glm::vec3(distance*cos(angle), distance*sin(1.f), distance*sin(angle));
     }
-    void setTarget(const glm::vec3& target_) { target = target_; }
+    void setTarget(const glm::vec3& target_) { 
+        target = target_;
+         }
+    glm::vec3 getTarget() { return target; }
+    void setPosition(const glm::vec3& pos_) { position = pos_; }
 private:
     float distance;
     float angle;

@@ -34,6 +34,7 @@ public:
     void UpdateInstanceBuffer();
     void Render(GLuint shaderProgram, const glm::mat4& mvp, const glm::mat4& offsetModel);
 
+    void Scale(float scale);
     ~Model() {
         glDeleteVertexArrays(1, &vao);
         glDeleteBuffers(1, &vbo);

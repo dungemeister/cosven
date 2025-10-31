@@ -3,7 +3,8 @@
 NewEarth::NewEarth(const std::string& texture_file, float radius):
     m_radius(radius),
     m_indices(m_indices_qty),
-    m_transform_matrix(1.0f)
+    m_transform_matrix(1.0f),
+    m_current_angle(0.f)
 {
    const float PI = 3.14159265359f;
    auto stacks = 15;

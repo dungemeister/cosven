@@ -1,6 +1,7 @@
 #include "satellite.hpp"
 
-Satellite::Satellite(const std::string& body_texture_file, const std::string& wing_texture_file){
+Satellite::Satellite(const std::string& body_texture_file, const std::string& wing_texture_file):
+m_selected(false) {
 
     std::vector<GLfloat> body_whole_vertices = {
         -0.2f,  0.0f, 0.2f,  0.0f, 0.0f, //0
@@ -99,8 +100,35 @@ void Satellite::RemoveAllInstances(){
     wings->RemoveAllInstances();
     m_instances_matrix.clear();
 }
-void Satellite::Render(GLuint shaderProgram, const glm::mat4& view, const glm::mat4& projection) {
+void Satellite::Render(GLuint shaderProgram, const glm::mat4& view, const glm::mat4& projection,
+                       GLuint borderProgram) {
     glm::mat4 mvp = projection * view;
-    body->Render(shaderProgram, mvp, glm::mat4(1.0f));
-    wings->Render(shaderProgram, mvp, glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f)));
+    
+    if(m_selected){
+        glEnable(GL_STENCIL_TEST);
+        glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+        glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+                
+        glStencilFunc(GL_ALWAYS, 1, 0xFF);
+        glStencilMask(0xFF);
+        body->Render(shaderProgram, mvp, glm::mat4(1.0f));
+        wings->Render(shaderProgram, mvp, glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f)));
+        
+        glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+        glStencilMask(0x00);
+        glDisable(GL_DEPTH_TEST);
+        float scale = m_border_scale;
+        body->Render(borderProgram, mvp,
+                    glm::scale(glm::mat4(1.0f), glm::vec3(scale, scale, scale)));
+        wings->Render(borderProgram, mvp,
+                    glm::scale(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f)), glm::vec3(scale, scale, scale)));
+
+        glStencilMask(0xFF);
+        glStencilFunc(GL_ALWAYS, 0, 0xFF);
+        glEnable(GL_DEPTH_TEST);
+    }
+    else{
+        body->Render(shaderProgram, mvp, glm::mat4(1.0f));
+        wings->Render(shaderProgram, mvp, glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f)));
+    }
 }

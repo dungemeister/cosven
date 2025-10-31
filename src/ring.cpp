@@ -53,10 +53,10 @@ void Ring::rotateRing(float d_angle){
 
 }
 
-void Ring::render(GLuint shaderProgram, GLuint segmentShaderProgram, const glm::mat4& view, const glm::mat4& projection){
-    m_satellites_model->Render(shaderProgram, view, projection);
-    if(m_segments)
-        m_segments->Render(segmentShaderProgram, projection * view);
+void Ring::render(GLuint shaderProgram, GLuint segmentShaderProgram, const glm::mat4& view, const glm::mat4& projection, GLuint borderShaderProgram){
+    m_satellites_model->Render(shaderProgram, view, projection, borderShaderProgram);
+    // if(m_segments)
+        // m_segments->Render(segmentShaderProgram, projection * view);
 }
 
 glm::mat4 Ring::MoveToPosition(const glm::mat4& currentTransform, const glm::vec3& target) {

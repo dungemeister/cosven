@@ -80,8 +80,10 @@ public:
     Ring(int ring_num, const std::string& body_texture_file, const std::string& wing_texture_file, glm::vec3 offset_vec = glm::vec3(0.f, 0.f, 0.f)):
         m_ring_num(ring_num),
         m_radius(10),
-        m_offset_vector(offset_vec)
+        m_offset_vector(offset_vec),
+        m_selected(false)
     {
+        m_display_name = "Плоскость " + std::to_string(ring_num + 1);
         rings_qty++;
         updateRingsAngle();
         m_satellites_matrix.reserve(100);
@@ -97,7 +99,9 @@ public:
         m_sat_angle(other.m_sat_angle),
         m_satellites_matrix(other.m_satellites_matrix),
         m_satellites_model(other.m_satellites_model ? std::make_shared<Satellite>(*other.m_satellites_model) : nullptr),
-        m_segments(other.m_segments ? std::make_shared<RingSegment>(*other.m_segments) : nullptr)
+        m_segments(other.m_segments ? std::make_shared<RingSegment>(*other.m_segments) : nullptr),
+        m_display_name(other.m_display_name),
+        m_selected(other.m_selected)
     {
         rings_qty++;
     }
@@ -109,7 +113,9 @@ public:
         m_sat_angle(other.m_sat_angle),
         m_satellites_matrix(other.m_satellites_matrix),
         m_satellites_model(std::move(other.m_satellites_model)),
-        m_segments(std::move(other.m_segments))
+        m_segments(std::move(other.m_segments)),
+        m_display_name(other.m_display_name),
+        m_selected(other.m_selected)
     {
         rings_qty++;
 
@@ -128,10 +134,17 @@ public:
 
     void rotateRing(float d_angle);
     void shiftRingAngle(float delta_angle);
-    void render(GLuint shaderProgram, GLuint segmentShaderProgram, const glm::mat4& view, const glm::mat4& projection);
+    void render(GLuint shaderProgram, GLuint segmentShaderProgram, const glm::mat4& view,
+                 const glm::mat4& projection, GLuint borderShaderProgram = 0);
 
     void updateRingsAngle() { m_ring_angle = 180.0f / rings_qty * (m_ring_num + 1); }
     void setOffsetVector(const glm::vec3& vector) { m_offset_vector = vector; }
+
+    std::string getDisplayName() { return m_display_name; }
+    void setSelected(bool selected) { 
+        m_selected = selected;
+        m_satellites_model->SetSelected(selected);
+    }
 
 private:
     static int rings_qty;
@@ -145,6 +158,8 @@ private:
     float m_sat_angle;
     glm::vec3 m_offset_vector;
 
+    std::string m_display_name;
+    bool m_selected;
     glm::mat4 MoveToPosition(const glm::mat4& currentTransform, const glm::vec3& target);
 };
 
