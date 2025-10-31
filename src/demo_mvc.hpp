@@ -65,19 +65,19 @@ public:
 
     DemoModel(){
 
-        auto sun = NewEarth("textures/sun.jpg", 12.f);
+        auto sun = NewEarth("assets/textures/sun.jpg", 12.f);
         sun.PushEarth(glm::vec3(0.f, 0.f, 0.f));
 
-        auto mercury = NewEarth("textures/mercury.jpg", 4.0f);
+        auto mercury = NewEarth("assets/textures/mercury.jpg", 4.0f);
         mercury.PushEarth(glm::vec3(0.f, 0.f, mercury_distance));
 
-        auto earth = NewEarth("textures/earth.jpg");
+        auto earth = NewEarth("assets/textures/earth.jpg");
         earth.PushEarth(glm::vec3(0.f, 0.f, earth_distance));
 
-        auto moon = NewEarth("textures/moon.jpg", 1.f);
+        auto moon = NewEarth("assets/textures/moon.jpg", 1.f);
         moon.PushEarth(glm::vec3(0.f, 0.f, earth_distance + 10.f));
 
-        auto mars = NewEarth("textures/mars.jpg", 5.f);
+        auto mars = NewEarth("assets/textures/mars.jpg", 5.f);
         mars.PushEarth(glm::vec3(0.f, 0.f, mars_distance));
 
         planets.push_back(sun);
@@ -87,7 +87,7 @@ public:
         planets.push_back(moon);
 
         for(int i = 0; i < rings_counter; i++){
-            rings.emplace_back(i, "textures/body.jpg", "textures/wing.jpg", glm::vec3(0.f, 0.f, earth_distance));
+            rings.emplace_back(i, "assets/textures/body.jpg", "assets/textures/wing.jpg", glm::vec3(0.f, 0.f, earth_distance));
         }
 
         for(auto& ring: rings){
@@ -95,12 +95,12 @@ public:
             ring.pushSatellites(sats_counter);
         }
         std::vector<std::string> faces = {
-            "test_skybox/right.jpg",
-            "test_skybox/left.jpg",
-            "test_skybox/top.jpg",
-            "test_skybox/bottom.jpg",
-            "test_skybox/front.jpg",
-            "test_skybox/back.jpg"
+            "assets/test_skybox/right.jpg",
+            "assets/test_skybox/left.jpg",
+            "assets/test_skybox/top.jpg",
+            "assets/test_skybox/bottom.jpg",
+            "assets/test_skybox/front.jpg",
+            "assets/test_skybox/back.jpg"
         };
         skyboxes.emplace_back(faces);
 
@@ -475,8 +475,8 @@ public:
     void updateRings(int new_count){
         while(m_model.rings.size() != new_count){
             if(new_count > m_model.rings.size()){
-                m_model.rings.emplace_back(m_model.rings.size(), "textures/body.jpg",
-                                           "textures/wing.jpg", glm::vec3(0.f, 0.f, m_model.earth_distance));
+                m_model.rings.emplace_back(m_model.rings.size(), "assets/textures/body.jpg",
+                                           "assets/textures/wing.jpg", glm::vec3(0.f, 0.f, m_model.earth_distance));
             }
             else{
                 m_model.rings.pop_back();
